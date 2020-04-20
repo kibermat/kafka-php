@@ -1,0 +1,80 @@
+{
+  "status":"ok",
+  "unitcode":"er",
+  "response":{
+    "status":"ok",
+    "mis_code":"MIS",
+    "Result":{
+      "ResultSet":
+      [
+        {
+          "id":"191174695",
+          "name":"Анализы",
+          "match_profile":null,
+          "action":"add",
+          "FullInfo":{
+            "RowSet":{
+
+            }
+          }
+        },
+        {
+          "id":"169503564",
+          "name":"Личные жалобы",
+          "match_profile":null,
+          "action":"add",
+          "FullInfo":{
+            "RowSet":{
+
+            }
+          }
+        },
+        {
+          "id":"32395926",
+          "name":"R-графия дентальная@",
+          "match_profile":null,
+          "action":"add",
+          "FullInfo":{
+              "RowSet":{
+
+              }
+          }
+        },
+        {
+          "id":"32395927",
+          "name":"Акушер-гинеколог ОМС",
+          "match_profile":null,
+          "action":"add",
+          "FullInfo":{
+            "RowSet":{
+
+            }
+          }
+        },
+        {
+          "id":"32395939",
+          "name":"Врач аллерголог-иммунолог",
+          "match_profile":null,
+          "action":"add",
+          "FullInfo":{
+            "RowSet":{
+
+            }
+          }
+        },
+        {
+          "id":"32395940",
+          "name":"Врач лаборант",
+          "match_profile":null,
+          "action":"add",
+          "FullInfo":{
+            "RowSet":{
+
+            }
+          }
+        }
+     ]
+    },
+    "message":null
+  }
+}
