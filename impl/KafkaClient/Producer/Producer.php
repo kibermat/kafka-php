@@ -28,7 +28,7 @@ class Producer extends \Kafka\Producer
         self::$handler->pushHandler(new StreamHandler($this->logsFile, Logger::DEBUG));
 
         $this->broker = $broker;
-        $this->topic = $topic;
+        $this->topic = (string) $topic;
 
         $this->arrStream = [
             [
@@ -62,6 +62,13 @@ class Producer extends \Kafka\Producer
 //            print_r(var_dump($errorCode));
 //        });
 
+    }
+
+    /**
+     * @return string
+     */
+    public function getTopic() {
+        return $this->topic;
     }
 
     /**
