@@ -182,6 +182,7 @@ BEGIN
                                           json_body -> 'response' -> 'Result' -> 'ResultSet') as t
                  left join er.er_mo as mo on mo.id = t.lpu_hid
             where t.lpu_hid is null or mo.id is not null
+            order by t.lpu_hid nulls first
         ), ins as (
             select
                 er.f_mis_mo8add(
