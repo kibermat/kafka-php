@@ -122,6 +122,25 @@ $$;
 alter function er.f_mis_directions8upd(bigint, bigint, uuid, bigint, text, bigint, text, bigint, bigint, bigint, jsonb) owner to dev;
 
 
+drop function if exists er.f_mis_directions8del(pn_id bigint);
+create function er.f_mis_directions8del(pn_id bigint) returns void
+    security definer
+    language plpgsql
+as $$
+begin
+    --perform core.f_bp_before(pn_lpu,null,null,'er_directions_del',pn_id);
+    begin
+        delete from er.er_directions t
+        where t.id   = pn_id;
+        if not found then perform core.f_msg_not_found(pn_id, 'er_directions'); end if;
+    exception when others then perform core.f_msg_errors(sqlstate,sqlerrm,'D');
+    end;
+    --perform core.f_bp_after(pn_lpu,null,null,'er_directions_del',pn_id);
+end;
+$$;
+alter function er.f_mis_directions8del(pn_id bigint) owner to dev;
+
+
 CREATE OR REPLACE FUNCTION public.kafka_load_derections(p_topic text)
     RETURNS void AS
 $$
@@ -188,11 +207,17 @@ BEGIN
                        "FullInfo"::jsonb
                    )
             from cte
-            where dir_uuid is not null /* action != 'add' */
-        ), cnt as (
+            where dir_uuid is not null and action = 'upd'
+        ), del as (
+            select er.f_mis_directions8del(id)
+            from cte
+            where dir_uuid is not null and action = 'del'
+        ),  cnt as (
             select count(1) as n from ins
             union all
             select count(1) as n from upd
+            union all
+            select count(1) as n from del
         )   select sum(n) into n_cnt
         from cnt;
 

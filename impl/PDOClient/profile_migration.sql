@@ -104,6 +104,25 @@ $$;
 alter function er.f_mis_profiles8upd(bigint, uuid, text, text, jsonb) owner to dev;
 
 
+drop function if exists er.f_mis_profiles8del(pn_id bigint);
+create function er.f_mis_profiles8del(pn_id bigint) returns void
+    security definer
+    language plpgsql
+as $$
+begin
+    --perform core.f_bp_before(pn_lpu,null,null,'er_profiles_del',pn_id);
+    begin
+        delete from er.er_profiles t
+        where t.id   = pn_id;
+        if not found then perform core.f_msg_not_found(pn_id, 'er_profiles'); end if;
+    exception when others then perform core.f_msg_errors(sqlstate,sqlerrm,'D');
+    end;
+    --perform core.f_bp_after(pn_lpu,null,null,'er_profiles_del',pn_id);
+end;
+$$;
+alter function er.f_mis_profiles8del(bigint) owner to dev;
+
+
 CREATE OR REPLACE FUNCTION public.kafka_load_profile(p_topic text)
     RETURNS void AS
 $$
@@ -151,11 +170,17 @@ BEGIN
                        "FullInfo"::jsonb
                    )
             from cte
-            where profile_uuid is not null /* action != 'add' */
+            where profile_uuid is not null and action = 'upd'
+        ), del as (
+            select er.f_mis_profiles8del(id)
+            from cte
+            where profile_uuid is not null and action = 'del'
         ), cnt as (
             select count(1) as n from ins
             union all
             select count(1) as n from upd
+            union all
+            select count(1) as n from del
         )   select sum(n) into n_cnt
         from cnt;
 

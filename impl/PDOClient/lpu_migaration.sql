@@ -151,6 +151,28 @@ $$;
 alter function er.f_mis_mo8find(bigint) owner to dev;
 
 
+drop function if exists er.f_mis_mo8del(pn_id bigint);
+create function er.f_mis_mo8del(pn_id bigint) returns void
+	security definer
+	language plpgsql
+as $$
+begin
+  --perform core.f_bp_before(pn_lpu,null,null,'er_mo_del',pn_id);
+  begin
+    delete from er.er_mo t
+     where t.id   = pn_id;
+    if not found then
+        perform core.f_msg_not_found(pn_id, 'er_mo');
+    end if;
+  exception when others then perform core.f_msg_errors(sqlstate,sqlerrm,'D');
+  end;
+  --perform core.f_bp_after(pn_lpu,null,null,'er_mo_del',pn_id);
+
+end;
+$$;
+alter function er.f_mis_mo8del(bigint) owner to dev;
+
+
 
 CREATE OR REPLACE FUNCTION public.kafka_load_lpu(p_topic text)
     RETURNS void AS
@@ -200,7 +222,7 @@ BEGIN
                                record_period,
                                allow_home_call,
                                "FullInfo"::jsonb
-                           )
+                )
             from cte
              where mo_uuid is null and "action" = 'add'
         ), upd as (
@@ -222,12 +244,18 @@ BEGIN
                            "FullInfo"::jsonb
                        )
             from cte
-            where mo_uuid is not null /* action != 'add' */
+            where mo_uuid is not null and action = 'upd'
+        ), del as (
+            select er.f_mis_mo8del(lpu_id)
+            from cte
+            where mo_uuid is not null and action = 'del'
         ), cnt as (
             select count(1) as n from ins
             union all
             select count(1) as n from upd
-        )   select sum(n) into n_cnt
+            union all
+            select count(1) as n from del
+        ) select sum(n) into n_cnt
         from cnt;
 
         if n_cnt > 0 then
