@@ -9,8 +9,14 @@ use PDOClient\Logger;
 
 $topic1 = 'get-lpu-info';
 $topic2 = 'get-profile-info';
+$topic3 = 'get-direction-info';
+$topic4 = 'get-resource';
+$topic5 = 'get-resource-person';
 
-$consumer =new Consumer(Settings::BROKER, [$topic1, $topic2], 'main_group');
+
+$consumer =new Consumer(Settings::BROKER,
+    [$topic1, $topic2, $topic3, $topic4, $topic5],
+    'main_group');
 
 $db = new Logger('pgsql:host=localhost;port=5432;dbname=er', 'postgres', 'postgres');
 

@@ -23,13 +23,21 @@ $lpu_json = json_decode($lpu_str, true);
 $profile_str = file_get_contents(__DIR__ . '/temp/profile.json');
 $profile_json = json_decode($profile_str, true);
 
+$directions_info_str = file_get_contents(__DIR__ . '/temp/directions_info.json');
+$directions_info_json = json_decode($directions_info_str, true);
+
+$resources_str = file_get_contents(__DIR__ . '/temp/resources.json');
+$resource_json = json_decode($resources_str, true);
+
 $resource_person_str = file_get_contents(__DIR__ . '/temp/resource_person.json');
 $resource_person_json = json_decode($resource_person_str, true);
+
 
 $async = false;
 $topic1 = 'get-lpu-info';
 $topic2 = 'get-profile-info';
-
+$topic3 = 'get-direction-info';
+$topic4 = 'get-resource';
 $topic5 = 'get-resource-person';
 
 
@@ -43,6 +51,12 @@ if ($async) {
 
     $producer2 =new Producer(Settings::BROKER, $topic2, '', '', $async);
     $producer2->send($profile_json);
+
+    $producer3 =new Producer(Settings::BROKER, $topic3, '', '', $async);
+    $producer3->send($directions_info_json);
+
+    $producer4 =new Producer(Settings::BROKER, $topic4, '', '', $async);
+    $producer4->send($resource_json);
 
     $producer5 =new Producer(Settings::BROKER, $topic5, '', '', $async);
     $producer5->send($resource_person_json);

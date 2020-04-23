@@ -131,7 +131,7 @@ DECLARE
     arr_ids   BIGINT[];
     rec_res   RECORD;
     json_body jsonb;
-    person_id bigint;
+    n_person_id bigint;
     cur_res   CURSOR (p_topic TEXT)
         FOR select *
             from public.kafka_result
@@ -148,43 +148,42 @@ BEGIN
         EXIT WHEN NOT FOUND;
 
         json_body := rec_res.data;
-        person_id := cast((json_body -> 'response' -> 'agent_id' ->> 0) as bigint);
+        n_person_id := cast((json_body -> 'response' -> 'agent_id' ->> 0) as bigint);
 
         with response as (
-             select t.*, t."allow" as is_allow,
-                 cast((json_body -> 'response' -> 'agent_id' ->> 0) as bigint) as person_id,
-                 cast(split_part(t.id, '.', 2) as bigint) as resource_id,
-                 split_part(t.id, '.', 1) as snils
-             from jsonb_populate_recordset(
-                 null::public.resource_person,
-                 json_body -> 'response' -> 'ResultSet' -> 'RowSet'
-             ) as t
+            select t.*, t."allow" as is_allow, coalesce(t."reg_allow", false) as is_reg_allow,
+                   cast(split_part(t.id, '.', 2) as bigint) as resource_id,
+                   split_part(t.id, '.', 1) as snils
+            from jsonb_populate_recordset(
+                         null::public.resource_person,
+                         json_body -> 'response' -> 'ResultSet' -> 'RowSet'
+                     ) as t
         ), cte as (
             select t.*
             from response as t
-                 join er.er_persons as per on per.id = t.person_id
-                 join er.er_resources as res on res.id = t.resource_id
+                     join er.er_persons as per on per.id = n_person_id
+                     join er.er_resources as res on res.id = t.resource_id
         ), ins as (
             select
                 er.f_mis_persons_resources8add(
-                               resource_id,
-                               person_id,
-                               reg_allow,
-                               is_allow,
-                               "FullInfo"::jsonb
-                ) as id
+                        resource_id,
+                        n_person_id,
+                        is_reg_allow,
+                        is_allow,
+                        "FullInfo"::jsonb
+                    ) as id
             from cte
         ) select array_agg(id) into arr_ids from ins;
 
         if array_length(arr_ids, 1) > 0 then
-             with del as (
-                 select er.f_mis_persons_resources8del(pr.id)
-                    from er_persons_resources pr
-                    where pr.person_id = person_id
-                        and not (pr.id = any(arr_ids))
-             ) select count(1) into n_cnt from del;
+            with del as (
+                select er.f_mis_persons_resources8del(pr.id)
+                from er.er_persons_resources pr
+                where pr.person_id = n_person_id
+                  and not (pr.id = any(arr_ids))
+            ) select count(1) into n_cnt from del;
 
-             DELETE FROM public.kafka_result WHERE CURRENT OF cur_res;
+            DELETE FROM public.kafka_result WHERE CURRENT OF cur_res;
         end if;
 
     END LOOP;
