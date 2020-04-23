@@ -10,6 +10,7 @@ composer.lock
 composer.phar
 nbproject
 tmp/
+temp/
 php-cs-fixer.phar
 vendor/*
 .php_cs.cache

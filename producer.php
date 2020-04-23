@@ -23,9 +23,14 @@ $lpu_json = json_decode($lpu_str, true);
 $profile_str = file_get_contents(__DIR__ . '/temp/profile.json');
 $profile_json = json_decode($profile_str, true);
 
+$resource_person_str = file_get_contents(__DIR__ . '/temp/resource_person.json');
+$resource_person_json = json_decode($resource_person_str, true);
+
 $async = false;
 $topic1 = 'get-lpu-info';
 $topic2 = 'get-profile-info';
+
+$topic5 = 'get-resource-person';
 
 
 if ($async) {
@@ -38,5 +43,8 @@ if ($async) {
 
     $producer2 =new Producer(Settings::BROKER, $topic2, '', '', $async);
     $producer2->send($profile_json);
+
+    $producer5 =new Producer(Settings::BROKER, $topic5, '', '', $async);
+    $producer5->send($resource_person_json);
 
 }
