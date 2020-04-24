@@ -27,6 +27,6 @@ $consumer->start(
         if ($json_response->unitcode = 'er') {
             $db->insertResult($topic, $str_response, $json_response->status == 'ok');
         }
-        print_r($topic . ' - ' . $json_response->status . PHP_EOL);
+        print_r($topic . ' part ' .$part. ' - ' . $json_response->status . PHP_EOL);
     }
 );

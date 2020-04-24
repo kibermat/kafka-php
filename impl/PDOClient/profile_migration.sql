@@ -151,6 +151,7 @@ BEGIN
             select t.*, er.f_mis_profiles8find(t.id) as profile_uuid
             from jsonb_populate_recordset(null::public.profile_type,
                                           json_body -> 'response' -> 'Result' -> 'ResultSet') as t
+             where t."name" is not null
         ), ins as (
             select er.f_mis_profiles8add(
                        id,

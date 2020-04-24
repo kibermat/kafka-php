@@ -29,10 +29,10 @@ class ProducerConfig extends Config
      */
     protected static $defaults = [
         'requiredAck'     => 1,
-        'timeout'         => 5000,
+        'timeout'         => 150000,
         'isAsyn'          => false,
-        'requestTimeout'  => 6000,
-        'produceInterval' => 100,
+        'requestTimeout'  => 160000,
+        'produceInterval' => 300,
         'compression'     => Protocol\Protocol::COMPRESSION_NONE,
     ];
 

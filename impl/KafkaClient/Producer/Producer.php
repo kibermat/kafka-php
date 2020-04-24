@@ -25,7 +25,7 @@ class Producer extends \Kafka\Producer
     public function __construct($broker, $topic, $data = '', $key = '', $async = false)
     {
         self::$handler = new Logger('producer_logger');
-        self::$handler->pushHandler(new StreamHandler($this->logsFile, Logger::DEBUG));
+        self::$handler->pushHandler(new StreamHandler($this->logsFile, Logger::ERROR));
 
         $this->broker = $broker;
         $this->topic = (string) $topic;

@@ -1,4 +1,16 @@
 
+DO $$
+    begin
+        if not exists (select true from pg_type where typname = 'resource_row_type') then
+            --drop type if exists public.resource_row_type;
+            create type public.resource_row_type as
+            (
+                "lpu_id"          bigint,
+                "div_id"          bigint,
+                "resource"        jsonb
+            );
+        END IF;
+ END$$;
 
 DO $$
     begin
@@ -7,8 +19,6 @@ DO $$
             create type public.resources_type as
             (
                 "id"              bigint,
-                "mo_id"           bigint,
-                "div_id"          bigint,
                 "profile_id"      bigint,
                 "name"            text,
                 "address"         text,
@@ -21,13 +31,15 @@ DO $$
                 "room"            text,
                 "service"         text,
                 "site_id"         bigint,
-                "emp_sname"       text,
-                "emp_fname"       text,
-                "emp_lname"       text,
+                "site_name"       text,
+                "doctor_surname"   text,
+                "doctor_firstname" text,
+                "doctor_lastname"  text,
                 "record_period"   integer,
                 "time_to_elapse"  integer,
                 "allow_wait_list" boolean,
                 "wait_list_msg"   text,
+                "action"          text,
                 "FullInfo"        jsonb
             );
         END IF;
@@ -55,8 +67,8 @@ $$;
 alter function er.f_mis_resources8find(bigint) owner to dev;
 
 
-drop function if exists  er.f_er_resources8add(pn_id bigint, pu_resource_uid uuid, pn_mo_id bigint, pn_div_id bigint, pn_profile_id bigint, ps_name text, ps_address text, ps_notification text, ps_hint text, pb_is_free boolean, pb_is_paid boolean, pn_price numeric, ps_department text, ps_room text, ps_service text, pn_site_id bigint, ps_emp_sname text, ps_emp_fname text, ps_emp_lname text, pn_record_period integer, pn_time_to_elapse integer, pb_allow_wait_list boolean, ps_wait_list_msg text, pu_add_info jsonb);
-create function er.f_er_resources8add(pn_id bigint, pu_resource_uid uuid, pn_mo_id bigint, pn_div_id bigint, pn_profile_id bigint, ps_name text, ps_address text, ps_notification text, ps_hint text, pb_is_free boolean, pb_is_paid boolean, pn_price numeric, ps_department text, ps_room text, ps_service text, pn_site_id bigint, ps_emp_sname text, ps_emp_fname text, ps_emp_lname text, pn_record_period integer, pn_time_to_elapse integer, pb_allow_wait_list boolean, ps_wait_list_msg text, pu_add_info jsonb) returns bigint
+drop function if exists er.f_mis_resources8add(pn_id bigint, pu_resource_uid uuid, pn_mo_id bigint, pn_div_id bigint, pn_profile_id bigint, ps_name text, ps_address text, ps_notification text, ps_hint text, pb_is_free boolean, pb_is_paid boolean, pn_price numeric, ps_department text, ps_room text, ps_service text, pn_site_id bigint, ps_emp_sname text, ps_emp_fname text, ps_emp_lname text, pn_record_period integer, pn_time_to_elapse integer, pb_allow_wait_list boolean, ps_wait_list_msg text, pu_add_info jsonb);
+create function er.f_mis_resources8add(pn_id bigint, pu_resource_uid uuid, pn_mo_id bigint, pn_div_id bigint, pn_profile_id bigint, ps_name text, ps_address text, ps_notification text, ps_hint text, pb_is_free boolean, pb_is_paid boolean, pn_price numeric, ps_department text, ps_room text, ps_service text, pn_site_id bigint, ps_emp_sname text, ps_emp_fname text, ps_emp_lname text, pn_record_period integer, pn_time_to_elapse integer, pb_allow_wait_list boolean, ps_wait_list_msg text, pu_add_info jsonb) returns bigint
     security definer
     language plpgsql
 as $$
@@ -125,11 +137,11 @@ begin
     return n_id;
 end;
 $$;
-alter function er.f_er_resources8add(bigint, uuid, bigint, bigint, bigint, text, text, text, text, boolean, boolean, numeric, text, text, text, bigint, text, text, text, integer, integer, boolean, text, jsonb) owner to dev;
+alter function er.f_mis_resources8add(bigint, uuid, bigint, bigint, bigint, text, text, text, text, boolean, boolean, numeric, text, text, text, bigint, text, text, text, integer, integer, boolean, text, jsonb) owner to dev;
 
 
-drop function if exists  er.f_er_resources8upd(pn_id bigint, pn_lpu bigint, pu_resource_uid uuid, pn_mo_id bigint, pn_div_id bigint, pn_profile_id bigint, ps_name text, ps_address text, ps_notification text, ps_hint text, pb_is_free boolean, pb_is_paid boolean, pn_price numeric, ps_department text, ps_room text, ps_service text, pn_site_id bigint, ps_emp_sname text, ps_emp_fname text, ps_emp_lname text, pn_record_period integer, pn_time_to_elapse integer, pb_allow_wait_list boolean, ps_wait_list_msg text, pu_add_info jsonb);
-create function er.f_er_resources8upd(pn_id bigint, pn_lpu bigint, pu_resource_uid uuid, pn_mo_id bigint, pn_div_id bigint, pn_profile_id bigint, ps_name text, ps_address text, ps_notification text, ps_hint text, pb_is_free boolean, pb_is_paid boolean, pn_price numeric, ps_department text, ps_room text, ps_service text, pn_site_id bigint, ps_emp_sname text, ps_emp_fname text, ps_emp_lname text, pn_record_period integer, pn_time_to_elapse integer, pb_allow_wait_list boolean, ps_wait_list_msg text, pu_add_info jsonb) returns bigint
+drop function if exists  er.f_mis_resources8upd(pn_id bigint, pu_resource_uid uuid, pn_mo_id bigint, pn_div_id bigint, pn_profile_id bigint, ps_name text, ps_address text, ps_notification text, ps_hint text, pb_is_free boolean, pb_is_paid boolean, pn_price numeric, ps_department text, ps_room text, ps_service text, pn_site_id bigint, ps_emp_sname text, ps_emp_fname text, ps_emp_lname text, pn_record_period integer, pn_time_to_elapse integer, pb_allow_wait_list boolean, ps_wait_list_msg text, pu_add_info jsonb);
+create function er.f_mis_resources8upd(pn_id bigint, pu_resource_uid uuid, pn_mo_id bigint, pn_div_id bigint, pn_profile_id bigint, ps_name text, ps_address text, ps_notification text, ps_hint text, pb_is_free boolean, pb_is_paid boolean, pn_price numeric, ps_department text, ps_room text, ps_service text, pn_site_id bigint, ps_emp_sname text, ps_emp_fname text, ps_emp_lname text, pn_record_period integer, pn_time_to_elapse integer, pb_allow_wait_list boolean, ps_wait_list_msg text, pu_add_info jsonb) returns bigint
     security definer
     language plpgsql
 as $$
@@ -177,7 +189,7 @@ begin
     return n_id;
 end;
 $$;
-alter function er.f_er_resources8upd(bigint, bigint, uuid, bigint, bigint, bigint, text, text, text, text, boolean, boolean, numeric, text, text, text, bigint, text, text, text, integer, integer, boolean, text, jsonb) owner to dev;
+alter function er.f_mis_resources8upd(bigint, uuid, bigint, bigint, bigint, text, text, text, text, boolean, boolean, numeric, text, text, text, bigint, text, text, text, integer, integer, boolean, text, jsonb) owner to dev;
 
 
 drop function if exists er.f_mis_resources8del(pn_id bigint);
@@ -199,8 +211,8 @@ $$;
 alter function er.f_mis_resources8del(bigint) owner to dev;
 
 
-CREATE OR REPLACE FUNCTION public.kafka_load_resources(p_topic text)
-    RETURNS void AS
+create or replace function public.kafka_load_resources(p_topic text)
+    RETURNS void as
 $$
 DECLARE
     n_cnt     INT DEFAULT 0;
@@ -213,108 +225,116 @@ DECLARE
               and success
               and pg_try_advisory_xact_lock(id)
                 for update;
-BEGIN
-    OPEN cur_res(p_topic);
+begin
+    open cur_res(p_topic);
 
-    LOOP
-        FETCH cur_res INTO rec_res;
+    loop
+        fetch cur_res into rec_res;
 
-        EXIT WHEN NOT FOUND;
+        exit when not FOUND;
 
         json_body := rec_res.data;
 
-        with cte as (
-            select t.*, er.f_mis_resources8find(t.id) as resource_uuid
-            from jsonb_populate_recordset(null::public.resources_type,
-                                          json_body -> 'response' -> 'Result' -> 'ResultSet') as t
-                     left join er.er_mo mo ON ( t.mo_id = mo.id )
-                     left join er.er_mo div ON ( t.div_id = div.id )
-                     left join er.er_profiles pr ON ( t.profile_id = pr.id )
-                     left join er.er_sites st ON (t.site_id = st.id )
-            where
-                (t.mo_id is null or mo.id is not null ) and
-                (t.div_id is null or div.id is not null) and
-                (t.profile_id is null or pr.id is not null) and
-                (t.site_id is null or st.id is not null)
+        with resources as (
+                    select t.*
+                    from jsonb_populate_recordset(null::public.resource_row_type,
+                            json_body -> 'response' -> 'ResultSet' -> 'Rowset' ) as t
+       ), cte as (
+        select er.f_mis_resources8find(t.id) as resource_uuid,
+               resources.lpu_id as lpu_id,
+               resources.div_id as div_id,
+               case when t."action" is null then 'add' else  t."action" end as "action_res"
+               , t.*
+        from resources join jsonb_populate_recordset(null::public.resources_type,  resource) as t on true
+            left join er.er_mo mo ON ( resources.lpu_id = mo.id )
+            left join er.er_mo div ON ( resources.div_id = div.id )
+            left join er.er_profiles pr ON ( t.profile_id = pr.id )
+            left join er.er_sites st ON (t.site_id = st.id )
+        where
+            (resources.lpu_id is null or mo.id is not null ) and
+            (resources.div_id is null or div.id is not null) and
+            (t.profile_id is null or pr.id is not null) and
+            (t.site_id is null or st.id is not null)
         ), ins as (
             select er.f_mis_resources8add(
-                           "id",
+                           "id"::bigint,
                            uuid_generate_v1(),
-                           "mo_id",
-                           "div_id",
-                           "profile_id",
-                           "name",
-                           "address",
-                           "notification",
-                           "hint",
-                           "is_free",
-                           "is_paid",
-                           "price",
-                           "department",
-                           "room",
-                           "service",
-                           "site_id",
-                           "emp_sname",
-                           "emp_fname",
-                           "emp_lname",
-                           "record_period",
-                           "time_to_elapse",
-                           "allow_wait_list",
-                           "wait_list_msg",
+                           "lpu_id"::bigint,
+                           "div_id"::bigint,
+                           "profile_id"::bigint,
+                           "name"::text,
+                           "address"::text,
+                           "notification"::text,
+                           "hint"::text,
+                           "is_free"::boolean,
+                           "is_paid"::boolean,
+                           case when "price" is null then 0 else "price" end,
+                           "department"::text,
+                           "room"::text,
+                           "service"::text,
+                           "site_id"::bigint,
+                           "doctor_surname"::text,
+                           "doctor_firstname"::text,
+                           "doctor_lastname"::text,
+                           "record_period"::integer,
+                           case when "time_to_elapse" is null then 0 else "time_to_elapse" end,
+                           case when "allow_wait_list" is null then false else "allow_wait_list" end,
+                           "wait_list_msg"::text,
                            "FullInfo"::jsonb
                        )
-            from cte
-            where resource_uuid is null and "action" = 'add'
-        ), upd as (
-            select er.f_mis_resources8upd(
-                           "id",
-                           resource_uuid,
-                           "mo_id",
-                           "div_id",
-                           "profile_id",
-                           "name",
-                           "address",
-                           "notification",
-                           "hint",
-                           "is_free",
-                           "is_paid",
-                           "price",
-                           "department",
-                           "room",
-                           "service",
-                           "site_id",
-                           "emp_sname",
-                           "emp_fname",
-                           "emp_lname",
-                           "record_period",
-                           "time_to_elapse",
-                           "allow_wait_list",
-                           "wait_list_msg",
-                           "FullInfo"::jsonb
-                       )
-            from cte
-            where resource_uuid is not null and action = 'upd'
-        ), del as (
-            select er.f_mis_resources8del(id)
-            from cte
-            where resource_uuid is not null and action = 'del'
-        ), cnt as (
-            select count(1) as n from ins
-            union all
-            select count(1) as n from upd
-            union all
-            select count(1) as n from del
-        )  select sum(n) into n_cnt
-        from cnt;
+
+                from cte
+                where resource_uuid is null and "action_res" = 'add'
+            ), upd as (
+                select er.f_mis_resources8upd(
+                               "id"::bigint,
+                               resource_uuid,
+                               "lpu_id"::bigint,
+                               "div_id"::bigint,
+                               "profile_id"::bigint,
+                               "name"::text,
+                               "address"::text,
+                               "notification"::text,
+                               "hint"::text,
+                               "is_free"::boolean,
+                               "is_paid"::boolean,
+                               case when "price" is null then 0 else "price" end,
+                               "department"::text,
+                               "room"::text,
+                               "service"::text,
+                               "site_id"::bigint,
+                               "doctor_surname"::text,
+                               "doctor_firstname"::text,
+                               "doctor_lastname"::text,
+                               "record_period"::integer,
+                               case when "time_to_elapse" is null then 0 else "time_to_elapse" end,
+                               case when "allow_wait_list" is null then false else "allow_wait_list" end,
+                               "wait_list_msg"::text,
+                               "FullInfo"::jsonb
+                           )
+                from cte
+                where resource_uuid is not null and action_res = 'upd'
+            ), del as (
+                select er.f_mis_resources8del(id)
+                from cte
+                where resource_uuid is not null and action_res = 'del'
+            ), cnt as (
+                select count(1) as n from ins
+                union all
+                select count(1) as n from upd
+                union all
+                select count(1) as n from del
+            )  select sum(n) into n_cnt
+            from cnt;
 
         if n_cnt > 0 then
-            DELETE FROM public.kafka_result WHERE CURRENT OF cur_res;
+            delete from public.kafka_result where current of cur_res;
         end if;
 
-    END LOOP;
+    end loop;
 
-    CLOSE cur_res;
+    close cur_res;
 
-END;
+end;
 $$
     LANGUAGE plpgsql;

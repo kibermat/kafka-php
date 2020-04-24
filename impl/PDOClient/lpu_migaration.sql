@@ -203,7 +203,8 @@ BEGIN
             from jsonb_populate_recordset(null::public.lpy_type,
                                           json_body -> 'response' -> 'Result' -> 'ResultSet') as t
                  left join er.er_mo as mo on mo.id = t.lpu_hid
-            where t.lpu_hid is null or mo.id is not null
+            where (t.lpu_hid is null or mo.id is not null)
+                 and t.lpu_name is not null
             order by t.lpu_hid nulls first
         ), ins as (
             select
@@ -222,7 +223,7 @@ BEGIN
                                record_period,
                                allow_home_call,
                                "FullInfo"::jsonb
-                )
+                           )
             from cte
              where mo_uuid is null and "action" = 'add'
         ), upd as (
@@ -258,9 +259,7 @@ BEGIN
         ) select sum(n) into n_cnt
         from cnt;
 
-        if n_cnt > 0 then
-            DELETE FROM public.kafka_result WHERE CURRENT OF cur_res;
-        end if;
+        DELETE FROM public.kafka_result WHERE CURRENT OF cur_res;
 
     END LOOP;
 

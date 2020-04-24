@@ -19,6 +19,27 @@ DO $$
         END IF;
     END$$;
 
+-- auto-generated definition
+create table er.er_direction_type
+(
+    id         bigint not null
+        constraint pk_er_direction_type
+            primary key,
+    code    int,
+    label   text not null
+);
+
+insert into  er.er_direction_type(code, label) values
+((1, 'Поликлиника'), (2, 'Стационар'));
+
+comment on table er.er_direction_type is 'Тип направления ';
+
+comment on column er_direction_type.id is 'Id';
+
+alter table er_directions
+    owner to dev;
+
+
 
 drop function if exists  er.f_mis_directions8find(pn_id bigint);
 create or replace function er.f_mis_directions8find(pn_id bigint) returns uuid
@@ -86,8 +107,8 @@ $$;
 alter function er.f_mis_directions8add(bigint, uuid, bigint, text, bigint, text, bigint, bigint, bigint, jsonb) owner to dev;
 
 
-drop function if exists  er.f_mis_directions8upd(pn_id bigint, pn_lpu bigint, pu_dir_uid uuid, pn_person_id bigint, ps_dir_numb text, pn_dir_type bigint, ps_dir_kind text, pn_mo_id bigint, pn_div_id bigint, pn_profile_id bigint, pu_add_info jsonb);
-create function er.f_mis_directions8upd(pn_id bigint, pn_lpu bigint, pu_dir_uid uuid, pn_person_id bigint, ps_dir_numb text, pn_dir_type bigint, ps_dir_kind text, pn_mo_id bigint, pn_div_id bigint, pn_profile_id bigint, pu_add_info jsonb) returns bigint
+drop function if exists  er.f_mis_directions8upd(pn_id bigint, pu_dir_uid uuid, pn_person_id bigint, ps_dir_numb text, pn_dir_type bigint, ps_dir_kind text, pn_mo_id bigint, pn_div_id bigint, pn_profile_id bigint, pu_add_info jsonb);
+create function er.f_mis_directions8upd(pn_id bigint, pu_dir_uid uuid, pn_person_id bigint, ps_dir_numb text, pn_dir_type bigint, ps_dir_kind text, pn_mo_id bigint, pn_div_id bigint, pn_profile_id bigint, pu_add_info jsonb) returns bigint
     security definer
     language plpgsql
 as $$
@@ -119,7 +140,7 @@ begin
     return n_id;
 end;
 $$;
-alter function er.f_mis_directions8upd(bigint, bigint, uuid, bigint, text, bigint, text, bigint, bigint, bigint, jsonb) owner to dev;
+alter function er.f_mis_directions8upd(bigint, uuid, bigint, text, bigint, text, bigint, bigint, bigint, jsonb) owner to dev;
 
 
 drop function if exists er.f_mis_directions8del(pn_id bigint);
@@ -142,12 +163,13 @@ alter function er.f_mis_directions8del(pn_id bigint) owner to dev;
 
 
 CREATE OR REPLACE FUNCTION public.kafka_load_derections(p_topic text)
-    RETURNS void AS
+    RETURNS int AS
 $$
 DECLARE
     n_cnt     INT DEFAULT 0;
     rec_res   RECORD;
     json_body jsonb;
+    n_person_id bigint;
     cur_res   CURSOR (p_topic TEXT)
         FOR select *
             from public.kafka_result
@@ -164,62 +186,62 @@ BEGIN
         EXIT WHEN NOT FOUND;
 
         json_body := rec_res.data;
+        n_person_id := cast((json_body -> 'response' -> 'agent_id' ->> 0) as bigint);
 
         with cte as (
-            select t.*, er.f_mis_directions8find(t.id) as dir_uuid
-            from jsonb_populate_recordset(null::public.directions_type,
-                                          json_body -> 'response' -> 'Result' -> 'ResultSet') as t
-
-                left join er.er_mo mo       on ( t.mo_id = mo.id )
-                left join er.er_mo div      on ( t.div_id = div.id )
-                left join er.er_persons per on ( t.person_id = per.id )
-                left join er.er_profiles pr on ( t.profile_id = pr.id )
-              where (t.mo_id is null or mo.id is not null) and
-                    (t.div_id is null or div.id is not null) and
-                    (t.person_id is null or per.id is not null) and
+                select t.*, er.f_mis_directions8find(t.id) as dir_uuid,
+                       case when lower(t."type") = 'поликлиника' then 1 else 2 end as dir_type
+                from jsonb_populate_recordset(null::public.directions_type,
+                        json_body -> 'response' -> 'ResultSet' -> 'RowSet') as t
+                         left join er.er_mo mo       on ( t.lpu = mo.id )
+                         left join er.er_mo div      on ( t.div = div.id )
+                         left join er.er_profiles pr on ( t.profile_id = pr.id )
+                where (t.lpu is null or mo.id is not null) and
+                    (t.div is null or div.id is not null) and
                     (t.profile_id is null or pr.id is not null)
-        ), ins as (
-            select er.f_mis_directions8add(
-                       id,
-                       uuid_generate_v1(),
-                       person_id,
-                       dir_numb,
-                       dir_type,
-                       dir_kind,
-                       mo_id,
-                       div_id,
-                       profile_id,
-                       "FullInfo"::jsonb
+                    and exists (select true from er.er_persons where id = n_person_id )
+            ), ins as (
+                select er.f_mis_directions8add(
+                   t.id::bigint,
+                   uuid_generate_v1(),
+                   n_person_id::bigint,
+                   t.dir_numb::text,
+                   t.dir_type::bigint,
+                   t.kind::text,
+                   t.lpu::bigint,
+                   t.div::bigint,
+                   t.profile_id::bigint,
+                   t."FullInfo"::jsonb
+               )
+                from cte as t
+                where t.dir_uuid is null and t."action" = 'add'
+            ), upd as (
+                select er.f_mis_directions8upd(
+                       t.id::bigint,
+                       t.dir_uuid,
+                       n_person_id::bigint,
+                       t.dir_numb::text,
+                       t.dir_type::bigint,
+                       t.kind::text,
+                       t.lpu::bigint,
+                       t.div::bigint,
+                       t.profile_id::bigint,
+                       t."FullInfo"::jsonb
                    )
-            from cte
-             where dir_uuid is null and "action" = 'add'
-        ), upd as (
-            select er.f_mis_directions8upd(
-                       id,
-                       dir_uuid,
-                       person_id,
-                       dir_numb,
-                       dir_type,
-                       dir_kind,
-                       mo_id,
-                       div_id,
-                       profile_id,
-                       "FullInfo"::jsonb
-                   )
-            from cte
-            where dir_uuid is not null and action = 'upd'
-        ), del as (
-            select er.f_mis_directions8del(id)
-            from cte
-            where dir_uuid is not null and action = 'del'
-        ),  cnt as (
-            select count(1) as n from ins
-            union all
-            select count(1) as n from upd
-            union all
-            select count(1) as n from del
-        )   select sum(n) into n_cnt
-        from cnt;
+        from cte as t
+        where dir_uuid is not null and action = 'upd'
+    ), del as (
+        select er.f_mis_directions8del(id)
+        from cte
+        where dir_uuid is not null and action = 'del'
+    ),  cnt as (
+        select count(1) as n from ins
+        union all
+        select count(1) as n from upd
+        union all
+        select count(1) as n from del
+    )   select sum(n) into n_cnt
+    from cnt;
 
         if n_cnt > 0 then
             DELETE FROM public.kafka_result WHERE CURRENT OF cur_res;
@@ -228,6 +250,8 @@ BEGIN
     END LOOP;
 
     CLOSE cur_res;
+
+    return n_cnt;
 
 END;
 $$

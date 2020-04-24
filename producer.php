@@ -17,19 +17,22 @@ function getProducer($topic, $data = '', $key = '', $async = false) {
     return $producer;
 }
 
-$lpu_str = file_get_contents(__DIR__ . '/temp/lpu.json');
+
+$temp_dir = __DIR__ . '/temp';
+
+$lpu_str = file_get_contents($temp_dir . '/lpu.json');
 $lpu_json = json_decode($lpu_str, true);
 
-$profile_str = file_get_contents(__DIR__ . '/temp/profile.json');
+$profile_str = file_get_contents($temp_dir . '/profile.json');
 $profile_json = json_decode($profile_str, true);
 
-$directions_info_str = file_get_contents(__DIR__ . '/temp/directions_info.json');
+$directions_info_str = file_get_contents($temp_dir . '/directions_info.json');
 $directions_info_json = json_decode($directions_info_str, true);
 
-$resources_str = file_get_contents(__DIR__ . '/temp/resources.json');
+$resources_str = file_get_contents($temp_dir . '/resources.json');
 $resource_json = json_decode($resources_str, true);
 
-$resource_person_str = file_get_contents(__DIR__ . '/temp/resource_person.json');
+$resource_person_str = file_get_contents($temp_dir . '/resource_person.json');
 $resource_person_json = json_decode($resource_person_str, true);
 
 

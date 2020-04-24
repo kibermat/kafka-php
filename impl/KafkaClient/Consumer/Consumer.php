@@ -24,7 +24,7 @@ class Consumer extends \Kafka\Consumer
     {
         parent::__construct();
         self::$handler = new Logger('consumer_logger');
-        self::$handler->pushHandler(new StreamHandler($this->logsFile, Logger::DEBUG));
+        self::$handler->pushHandler(new StreamHandler($this->logsFile, Logger::ERROR));
 
         $this->broker = $broker;
         $this->topics = $topics;

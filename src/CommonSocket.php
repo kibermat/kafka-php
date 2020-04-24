@@ -184,7 +184,7 @@ abstract class CommonSocket
             $remoteSocket,
             $errno,
             $errstr,
-            $this->sendTimeoutSec + ($this->sendTimeoutUsec / 1000000),
+            $this->sendTimeoutSec + ($this->sendTimeoutUsec / 100000) + 1,
             STREAM_CLIENT_CONNECT,
             $context
         );
