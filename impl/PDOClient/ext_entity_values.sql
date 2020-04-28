@@ -280,16 +280,10 @@ alter function f_ext_entity_values8rebuild(pn_system integer, pn_entity integer,
 /*
 set search_path to er, public;
 
-ALTER TABLE er_profiles ADD COLUMN ext_id bigint default null;
-comment on column er_profiles.ext_id is 'Ссылка на внешний идентификатор';
-ALTER TABLE er_profiles ADD CONSTRAINT fk_ext_entity_values_id FOREIGN KEY ( ext_id ) REFERENCES ext_entity_values( id ) ON DELETE CASCADE;
 
 ALTER TABLE er_resources ADD COLUMN ext_id bigint default null;
 comment on column er_resources.ext_id is 'Ссылка на внешний идентификатор';
 ALTER TABLE er_resources ADD CONSTRAINT fk_ext_entity_values_id FOREIGN KEY ( ext_id ) REFERENCES ext_entity_values( id ) ON DELETE CASCADE;
 
-ALTER TABLE er_directions ADD COLUMN ext_id bigint default null;
-comment on column er_directions.ext_id is 'Ссылка на внешний идентификатор';
-ALTER TABLE er_directions ADD CONSTRAINT fk_ext_entity_values_id FOREIGN KEY ( ext_id ) REFERENCES ext_entity_values( id ) ON DELETE CASCADE;
 
 */
