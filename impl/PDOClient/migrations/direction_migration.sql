@@ -229,8 +229,7 @@ BEGIN
         where id = n_ext_person_id;
 
         if not found then
-            raise notice 'Нет агента. Идентификатор внешней системы % ', n_ext_person_id;
-            return n_cnt;
+            raise exception 'Нет агента. Идентификатор внешней системы % ', n_ext_person_id;
         end if;
 
         with map as (

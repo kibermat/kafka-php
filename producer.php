@@ -58,10 +58,10 @@ if ($async) {
 //    $producer3 =new Producer(Settings::BROKER, $topic3, '', '', $async);
 //    $producer3->send($directions_info_json);
 //
-    $producer4 =new Producer(Settings::BROKER, $topic4, '', '', $async);
-    $producer4->send($resource_json);
+//    $producer4 =new Producer(Settings::BROKER, $topic4, '', '', $async);
+//    $producer4->send($resource_json);
 //
-//    $producer5 =new Producer(Settings::BROKER, $topic5, '', '', $async);
-//    $producer5->send($resource_person_json);
+    $producer5 =new Producer(Settings::BROKER, $topic5, '', '', $async);
+    $producer5->send($resource_person_json);
 
 }

@@ -186,8 +186,7 @@ BEGIN
         where id = n_ext_person_id;
 
         if not found then
-            raise notice 'Нет агента. Идентификатор внешней системы % ', n_ext_person_id;
-            return n_cnt;
+            raise exception 'Нет агента. Идентификатор внешней системы % ', n_ext_person_id;
         end if;
 
         with response as (
@@ -204,7 +203,7 @@ BEGIN
                          null::public.ext_system_resource_person_type,
                          json_body -> 'response' -> 'ResultSet' -> 'RowSet'
                      ) as t
-        ),
+             ),
              cte as (
                  select f_ext_entity_values8rebuild(n_system, n_entity, t._id, "action_res") as ext_id,
                         res.id                                                               as resource_id,
