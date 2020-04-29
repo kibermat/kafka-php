@@ -218,8 +218,9 @@ $$;
 alter function er.f_mis_mo8del(bigint) owner to dev;
 
 
+drop function if exists public.kafka_load_lpu(p_topic text);
 CREATE OR REPLACE FUNCTION public.kafka_load_lpu(p_topic text)
-    RETURNS void AS
+    RETURNS int AS
 $$
 DECLARE
     n_cnt     INT DEFAULT 0;
@@ -322,6 +323,8 @@ BEGIN
     END LOOP;
 
     CLOSE cur_res;
+
+    return n_cnt;
 
 END;
 $$

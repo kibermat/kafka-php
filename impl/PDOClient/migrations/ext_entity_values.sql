@@ -207,7 +207,8 @@ end;
 $$;
 alter function f_ext_entity_values8upd(bigint, integer, integer, bigint) owner to dev;
 
-create or replace function f_ext_entity_values8del(pn_id bigint) returns bigint
+drop function if exists f_ext_entity_values8del(pn_id bigint);
+create or replace function f_ext_entity_values8del(pn_id bigint) returns void
     security definer
     language plpgsql
 as $$
@@ -215,14 +216,13 @@ begin
 
     begin
         delete from ext_entity_values t
-        where t.id   = pn_id;
+        where t.id = pn_id;
 
         if not found then
-            raise 'Запись с идентификаторм % не найдена!', pn_id;
+            raise notice 'Запись с идентификаторм % не найдена!', pn_id;
         end if;
-    end;
 
-    return null;
+    end;
 end;
 $$;
 alter function f_ext_entity_values8del(bigint) owner to dev;
@@ -261,29 +261,19 @@ declare
     n_id  bigint default null;
 begin
 
-    select case
-               when t.id is null and "action" in ('add', 'upd') then
-                   f_ext_entity_values8add(pn_system, pn_entity, pn_value)
-               when t.id is not null and "action" = 'del' then
-                   f_ext_entity_values8del(t.id)
-               else t.id
-               end as ext_entity_values_id
-    into n_id
-    from (VALUES (f_ext_entity_values8find(pn_system, pn_entity, pn_value), ps_action)) as t(id, "action");
+    n_id := f_ext_entity_values8find(pn_system, pn_entity, pn_value);
+
+    if n_id is not null then
+        perform f_ext_entity_values8del(n_id);
+        n_id := null;
+    end if;
+
+    if ps_action in ('add', 'upd') then
+        n_id := f_ext_entity_values8add(pn_system, pn_entity, pn_value);
+    end if;
 
     return n_id;
 end;
 $$;
 alter function f_ext_entity_values8rebuild(pn_system integer, pn_entity integer, pn_value bigint, ps_action varchar) owner to dev;
 
-
-/*
-set search_path to er, public;
-
-
-ALTER TABLE er_resources ADD COLUMN ext_id bigint default null;
-comment on column er_resources.ext_id is 'Ссылка на внешний идентификатор';
-ALTER TABLE er_resources ADD CONSTRAINT fk_ext_entity_values_id FOREIGN KEY ( ext_id ) REFERENCES ext_entity_values( id ) ON DELETE CASCADE;
-
-
-*/
