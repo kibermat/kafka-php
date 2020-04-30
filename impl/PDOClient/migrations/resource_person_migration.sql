@@ -191,19 +191,19 @@ BEGIN
 
         with response as (
             select t.*,
-                   t."allow"                                                                              as is_allow,
-                   coalesce(t."reg_allow", false)                                                         as is_reg_allow,
-                   case when t."action" is null then 'add' else t."action" end                            as "action_res",
-                   split_part(t.id, '.', 1)                                                               as snils,
-                   cast(split_part(t.id, '.', 2) as bigint)                                               as res_id,
-                   cast(concat(n_person_id, split_part(t.id, '.', 2)) as bigint)                          as _id,
+                   t."allow"                                                          as is_allow,
+                   coalesce(t."reg_allow", false)                                     as is_reg_allow,
+                   case when t."action" is null then 'add' else t."action" end        as "action_res",
+                   split_part(t.id, '.', 1)                                           as snils,
+                   cast(split_part(t.id, '.', 2) as bigint)                           as res_id,
+                   cast(concat(n_person_id, split_part(t.id, '.', 2)) as bigint)      as _id,
                    f_ext_entity_values8find(n_system, n_entity,
-                                            cast(split_part(t.id, '.', 2) as bigint))                     as resource_ext_id
+                                            cast(split_part(t.id, '.', 2) as bigint)) as resource_ext_id
             from jsonb_populate_recordset(
                          null::public.ext_system_resource_person_type,
                          json_body -> 'response' -> 'ResultSet' -> 'RowSet'
                      ) as t
-             ),
+        ),
              cte as (
                  select f_ext_entity_values8rebuild(n_system, n_entity, t._id, "action_res") as ext_id,
                         res.id                                                               as resource_id,
