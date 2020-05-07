@@ -291,3 +291,17 @@ end;
 $$;
 alter function f_ext_entity_values8rebuild(pn_system integer, pn_entity integer, pn_value bigint, ps_action varchar) owner to dev;
 
+
+create or replace function f_mis_agent8find(pu_uid uuid, out "agent" varchar)
+as
+'
+    select ag.mis_agent as agent
+    from er.er_persons as per
+             join er.er_users as er_u on er_u.id = per.er_users
+             join er.er_mis_agents as ag on ag.sysuser = er_u.sysuser
+    where per.pers_uid = pu_uid
+    limit 1
+'
+    LANGUAGE SQL;
+alter function f_mis_agent8find(pu_uid uuid, out "agent" varchar) owner to dev;
+--select f_ext_system_entities8find('MIS_BARS', 'get-lpu-info');
