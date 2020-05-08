@@ -166,7 +166,7 @@ BEGIN
         EXIT WHEN NOT FOUND;
 
         json_body := rec_res.data;
-        -- TODO  PersonId
+
         n_ext_person_id := cast((json_body -> 'response' -> 'agent_id' ->> 0) as bigint);
         s_mis_code := json_body -> 'response' -> 'mis_code' ->> 0;
         s_type := 'er_persons_resource';
@@ -179,13 +179,9 @@ BEGIN
             raise exception 'Нет реализации % для внешней системы %', p_topic, s_mis_code;
         end if;
 
-        -- TODO Find AgentId
-        select id
-        into n_person_id
-        from er.er_persons
-        where id = n_ext_person_id;
+        n_person_id := f_mis_person8find(n_ext_person_id);
 
-        if not found then
+        if n_person_id is null then
             raise exception 'Нет агента. Идентификатор внешней системы % ', n_ext_person_id;
         end if;
 

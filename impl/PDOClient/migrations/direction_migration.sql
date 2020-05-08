@@ -222,13 +222,9 @@ BEGIN
             raise exception 'Нет реализации % для внешней системы %', p_topic, s_mis_code;
         end if;
 
-        -- TODO Find AgentId
-        select id
-        into n_person_id
-        from er.er_persons
-        where id = n_ext_person_id;
+        n_person_id := f_mis_person8find(n_ext_person_id);
 
-        if not found then
+        if n_person_id is null then
             raise exception 'Нет агента. Идентификатор внешней системы % ', n_ext_person_id;
         end if;
 

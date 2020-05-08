@@ -304,4 +304,19 @@ as
 '
     LANGUAGE SQL;
 alter function f_mis_agent8find(pu_uid uuid, out "agent" varchar) owner to dev;
---select f_ext_system_entities8find('MIS_BARS', 'get-lpu-info');
+--select f_mis_agent8find('0cb40d52-abac-4fef-9f9e-6d64ec53de27');
+
+
+create or replace function f_mis_person8find(agent bigint, out person_id bigint)
+as
+'
+    select per.id as person_id
+    from er.er_mis_agents as ag
+             join er.er_users as er_u on er_u.id = ag.er_user
+             join er.er_persons as per on per.er_users = er_u.id
+    where ag.mis_agent = agent::varchar
+    limit 1
+'
+    LANGUAGE SQL;
+alter function f_mis_person8find(agent bigint, out person_id bigint) owner to dev;
+--select f_mis_person8find(5900111);
