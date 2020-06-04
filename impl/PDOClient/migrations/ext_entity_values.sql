@@ -87,7 +87,8 @@ from (values ('get-agent', 'Информация о пользователе', n
              ('get-direction-info', 'Справочник направлений', null),
              ('get-resource', 'Справочник врачей/услуг', null),
              ('get-resource-person', 'Доступные врачи/услуги пользователю', null),
-             ('get-schedule', 'Расписания ', '/med2des/webservice/rpc/er/get_schedule')
+             ('get-schedule', 'Расписания ', '/med2des/webservice/rpc/er/get_schedule'),
+             ('put-appointment', 'Запись на прием', '/med2des/webservice/rpc/er/put_ticket_add')
      ) as t (code, description, endpoint)
 ;
 
