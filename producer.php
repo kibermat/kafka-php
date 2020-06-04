@@ -3,19 +3,7 @@
 require __DIR__ . '/vendor/autoload.php';
 
 use KafkaClient\Producer\Producer;
-use KafkaClient\Producer\ProducerFactory;
 use KafkaClient\Settings;
-
-
-function getProducer($topic, $data = '', $key = '', $async = false) {
-    $producer = ProducerFactory::getProducer($topic);
-
-    if(!$producer) {
-        $producer = new Producer(Settings::BROKER, $topic, $data, $key, $async);
-        ProducerFactory::pushProducer($producer);
-    }
-    return $producer;
-}
 
 
 $temp_dir = __DIR__ . '/temp';
