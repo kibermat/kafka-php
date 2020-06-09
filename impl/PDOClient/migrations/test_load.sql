@@ -9,3 +9,5 @@ select public.kafka_load_derections('get-direction-info');
 select public.kafka_load_resources('get-resource');
 
 select public.kafka_load_resource_person('get-resource-person');
+
+select public.kafka_load_person('get-about-me');

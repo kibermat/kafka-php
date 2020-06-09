@@ -42,6 +42,7 @@ $$;
 alter function f_ext_systems8add(ps_code text, ps_description text, ps_url text) owner to dev;
 
 select f_ext_systems8add('mis_bars', 'МИС Барс', 'localhost');
+select f_ext_systems8add('meditus', 'Сервис мобилки', 'localhost');
 
 
 CREATE TABLE IF NOT EXISTS ext_entities
@@ -88,7 +89,8 @@ from (values ('get-agent', 'Информация о пользователе', n
              ('get-resource', 'Справочник врачей/услуг', null),
              ('get-resource-person', 'Доступные врачи/услуги пользователю', null),
              ('get-schedule', 'Расписания ', '/med2des/webservice/rpc/er/get_schedule'),
-             ('put-appointment', 'Запись на прием', '/med2des/webservice/rpc/er/put_ticket_add')
+             ('put-appointment', 'Запись на прием', '/med2des/webservice/rpc/er/put_ticket_add'),
+             ('get-about-me', 'Первичная загрузка по пациенту', null)
      ) as t (code, description, endpoint)
 ;
 
