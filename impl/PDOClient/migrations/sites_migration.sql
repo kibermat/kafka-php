@@ -134,6 +134,87 @@ end;
 $$;
 alter function f_mis_sites8del(bigint) owner to dev;
 
+drop function if exists f_mis_person_sites8add(pn_sites_id bigint, pn_person_id bigint, pb_is_allow boolean, ps_purpose text, ps_type text, pu_add_info jsonb);
+create function f_mis_person_sites8add(pn_sites_id bigint, pn_person_id bigint, pb_is_allow boolean, ps_purpose text, ps_type text, pu_add_info jsonb) returns bigint
+    security definer
+    language plpgsql
+as $$
+declare
+    n_id                  bigint;
+begin
+--     perform core.f_bp_before(pn_lpu,null,null,'er_person_sites_add',null);
+    begin
+        insert into er.er_person_sites
+        (
+            id,
+            sites_id,
+            person_id,
+            is_allow,
+            purpose,
+            type,
+            add_info
+        )
+        values
+        (
+            core.f_gen_id(),
+            pn_sites_id,
+            pn_person_id,
+            pb_is_allow,
+            ps_purpose,
+            ps_type,
+            pu_add_info
+        ) returning id into n_id;
+    exception when others then perform core.f_msg_errors(sqlstate,sqlerrm,'A');
+    end;
+--     perform core.f_bp_after(pn_lpu,null,null,'er_person_sites_add',n_id);
+    return n_id;
+end;
+$$;
+alter function f_mis_person_sites8add(bigint,  bigint, boolean, text, text, jsonb) owner to dev;
+
+
+drop function if exists f_mis_person_sites8upd(pn_id bigint, pn_sites_id bigint, pn_person_id bigint, pb_is_allow boolean, ps_purpose text, ps_type text, pu_add_info jsonb);
+create function f_mis_person_sites8upd(pn_id bigint, pn_sites_id bigint, pn_person_id bigint, pb_is_allow boolean, ps_purpose text, ps_type text, pu_add_info jsonb) returns void
+    security definer
+    language plpgsql
+as $$
+begin
+--     perform core.f_bp_before(pn_lpu,null,null,'er_person_sites_upd',pn_id);
+    begin
+        update er.er_person_sites t set
+                                        sites_id = pn_sites_id,
+                                        person_id = pn_person_id,
+                                        is_allow = pb_is_allow,
+                                        purpose = ps_purpose,
+                                        type = ps_type,
+                                        add_info = pu_add_info
+        where t.id   = pn_id;
+        if not found then perform core.f_msg_not_found(pn_id, 'er_person_sites'); end if;
+    exception when others then perform core.f_msg_errors(sqlstate,sqlerrm,'U');
+    end;
+--     perform core.f_bp_after(pn_lpu,null,null,'er_person_sites_upd',pn_id);
+end;
+$$;
+alter function f_mis_person_sites8upd(bigint, bigint, bigint, boolean, text, text, jsonb) owner to dev;
+
+drop function if exists f_mis_person_sites8del(pn_id bigint);
+create function f_mis_person_sites8del(pn_id bigint) returns void
+    security definer
+    language plpgsql
+as $$
+begin
+--     perform core.f_bp_before(pn_lpu,null,null,'er_person_sites_del',pn_id);
+    begin
+        delete from er.er_person_sites t
+        where t.id   = pn_id;
+        if not found then perform core.f_msg_not_found(pn_id, 'er_person_sites'); end if;
+    exception when others then perform core.f_msg_errors(sqlstate,sqlerrm,'D');
+    end;
+--     perform core.f_bp_after(pn_lpu,null,null,'er_person_sites_del',pn_id);
+end;
+$$;
+alter function f_mis_person_sites8del(bigint) owner to dev;
+
 
 drop function if exists public.kafka_load_sites(p_topic text);
 CREATE OR REPLACE FUNCTION public.kafka_load_sites(p_topic text)

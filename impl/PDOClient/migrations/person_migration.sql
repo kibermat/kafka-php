@@ -112,7 +112,8 @@ as
     select t.id
     from er.er_persons as t
     where (nullif(trim(ps_snils), '''') is not null or
-          (nullif(trim(ps_fname), '''') is not null and nullif(trim(ps_lname), '''') is not null and pd_birth_date is not null))
+           (nullif(trim(ps_fname), '''') is not null and nullif(trim(ps_lname), '''') is not null and
+            pd_birth_date is not null))
       and (nullif(trim(ps_snils), '''') is null or t.snils = ps_snils)
       and (nullif(trim(ps_fname), '''') is null or lower(t.fname) = lower(trim(ps_fname)))
       and (nullif(trim(ps_mname), '''') is null or lower(t.mname) = lower(trim(ps_mname)))
@@ -191,11 +192,11 @@ BEGIN
         end if;
 
         with patient as (
-                select t.*,
-                       f_mis_persons8find(t.fname, t.mname, t.lname, t.birthdate, t.snils) as id
-                from jsonb_populate_recordset(null::public.ext_system_person_type,
-                                              json_body -> 'response' -> 'patient') as t
-             ),
+            select t.*,
+                   f_mis_persons8find(t.fname, t.mname, t.lname, t.birthdate, t.snils) as id
+            from jsonb_populate_recordset(null::public.ext_system_person_type,
+                                          json_body -> 'response' -> 'patient') as t
+        ),
              ins_person(id) as (
                  select er.f_mis_persons8add(
                                 null,
@@ -249,7 +250,7 @@ BEGIN
         from new_patient;
 
         if n_person_id is null then
-            raise exception 'Не удалось создать пациента с uuid  %', u_agent_id;
+            raise exception 'Не удалось создать пациента по uuid  %', u_agent_id;
         end if;
 
         with polis as (
@@ -300,9 +301,110 @@ BEGIN
         into n_cnt
         from cnt;
 
-        if n_cnt > 0 then
-            DELETE FROM public.kafka_result WHERE CURRENT OF cur_res;
-        end if;
+        with sites as (
+            select t.*,
+                   f_ext_entity_values8find(n_system, n_entity, t."LPU_ID")                                as mo_ext_id,
+                   f_ext_entity_values8find(n_system, n_entity, t."DIV_ID")                                as div_ext_id,
+                   f_ext_entity_values8rebuild(n_system, n_entity, t."SITE_ID", coalesce(t.action, 'add')) as ext_id
+            from jsonb_populate_recordset(null::public.ext_system_sites_type,
+                                          json_body -> 'response' -> 'sites') as t
+            where t."SITE_CODE" is not null
+        ),
+             ext as (
+                 select t.*,
+                        mo.id  as mo,
+                        div.id as div
+                 from sites as t
+                          left join er.er_mo mo ON (t.mo_ext_id = mo.ext_id)
+                          left join er.er_mo div ON (t.div_ext_id = div.ext_id)
+             ),
+             cte as (
+                 select t.*,
+                        s.site_id as site_uuid,
+                        s.id      as id
+                 from ext as t
+                          left join er.er_sites as s on s.ext_id = t.ext_id
+             ),
+             ins_sites(id, ext_id) as (
+                 select er.f_mis_sites8add(
+                                t.ext_id,
+                                uuid_generate_v1(),
+                                mo,
+                                div,
+                                t."SITE_CODE",
+                                t."SITE_NAME",
+                                t."DATE_BEGIN"::date,
+                                t."DATE_END"::date,
+                                t."FullInfo"::jsonb
+                            ), t.ext_id
+                 from cte as t
+                          left join er.er_mo mo ON (t.mo_ext_id = mo.ext_id)
+                          left join er.er_mo div ON (t.div_ext_id = div.ext_id)
+                 where t.id is null
+             ),
+             upd_sites(none, id, ext_id) as (
+                 select er.f_mis_sites8upd(
+                                t.id,
+                                t.ext_id,
+                                t.site_uuid,
+                                t.mo,
+                                t.div,
+                                t."SITE_CODE",
+                                t."SITE_NAME",
+                                t."DATE_BEGIN"::date,
+                                t."DATE_END"::date,
+                                t."FullInfo"::jsonb
+                            ) as none,
+                        t.id, t.ext_id
+                 from cte as t
+                 where t.id is not null
+             ),
+             all_sites(id, ext_id) as (
+                 select id, ext_id
+                 from ins_sites
+                 union
+                 select id, ext_id
+                 from upd_sites
+             ),
+             ins_person_sites as (
+                 select er.f_mis_person_sites8add(
+                                ss.id,
+                                n_person_id,
+                                true,
+                                p."PURPOSE",
+                                p."TYPE",
+                                null::jsonb)
+                 from all_sites as ss
+                          join cte as p on ss.ext_id = p.ext_id
+                          left join er.er_person_sites as ps on ps.sites_id = ss.id
+                 where ps.id is null
+             ),
+             upd_person_sites as (
+                 select er.f_mis_person_sites8upd(
+                                ps.id,
+                                ss.id,
+                                n_person_id,
+                                true,
+                                p."PURPOSE",
+                                p."TYPE",
+                                p."TYPE",
+                                null::jsonb)
+                 from er.er_person_sites as ps
+                          join all_sites as ss on ps.sites_id = ss.id
+                          join cte as p on ss.ext_id = p.ext_id
+             ),
+             cnt as (
+                 select count(1) as n
+                 from ins_person_sites
+                 union all
+                 select count(1) as n
+                 from upd_person_sites
+             )
+        select sum(n)
+        into n_cnt
+        from cnt;
+
+        DELETE FROM public.kafka_result WHERE CURRENT OF cur_res;
 
     END LOOP;
 
@@ -313,7 +415,5 @@ BEGIN
 END;
 $$
     LANGUAGE plpgsql;
-
-
 
 --select public.kafka_load_person('get-about-me')
