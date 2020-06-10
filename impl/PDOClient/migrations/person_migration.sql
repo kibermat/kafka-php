@@ -21,7 +21,8 @@ $$;
 
 
 create index if not exists i_er_persons_er_fio_date
-    on er.er_persons (lower(fname), lower(mname), lower(lname), birth_date);
+    on er.er_persons (birth_date, lower(lname), lower(fname), lower(mname));
+
 
 create index if not exists i_er_persons_er_snils
     on er.er_persons (snils);
@@ -110,10 +111,12 @@ as
 '
     select t.id
     from er.er_persons as t
-    where (ps_snils is null or t.snils = ps_snils)
-      and (ps_fname is null or lower(t.fname) = lower(ps_fname))
-      and (ps_mname is null or lower(t.mname) = lower(ps_mname))
-      and (ps_lname is null or lower(t.lname) = lower(ps_lname))
+    where (nullif(trim(ps_snils), '''') is not null or
+          (nullif(trim(ps_fname), '''') is not null and nullif(trim(ps_lname), '''') is not null and pd_birth_date is not null))
+      and (nullif(trim(ps_snils), '''') is null or t.snils = ps_snils)
+      and (nullif(trim(ps_fname), '''') is null or lower(t.fname) = lower(trim(ps_fname)))
+      and (nullif(trim(ps_mname), '''') is null or lower(t.mname) = lower(trim(ps_mname)))
+      and (nullif(trim(ps_lname), '''') is null or lower(t.lname) = lower(trim(ps_lname)))
       and (pd_birth_date is null or t.birth_date = pd_birth_date::date)
     limit 1
 '
@@ -148,15 +151,16 @@ CREATE OR REPLACE FUNCTION public.kafka_load_person(p_topic text)
     RETURNS int AS
 $$
 DECLARE
-    n_cnt      INT DEFAULT 0;
-    s_mis_code VARCHAR;
-    u_agent_id uuid;
-    n_user_id  INTEGER;
-    s_type     VARCHAR;
-    n_system   INTEGER;
-    n_entity   INTEGER;
-    rec_res    RECORD;
-    json_body  jsonb;
+    n_cnt       INT DEFAULT 0;
+    n_person_id bigint default null;
+    s_mis_code  VARCHAR;
+    u_agent_id  uuid;
+    n_user_id   INTEGER;
+    s_type      VARCHAR;
+    n_system    INTEGER;
+    n_entity    INTEGER;
+    rec_res     RECORD;
+    json_body   jsonb;
     cur_res CURSOR (p_topic TEXT)
         FOR select *
             from public.kafka_result
@@ -187,11 +191,11 @@ BEGIN
         end if;
 
         with patient as (
-            select t.*,
-                   f_mis_persons8find(t.fname, t.mname, t.lname, t.birthdate, t.snils) as id
-            from jsonb_populate_recordset(null::public.ext_system_person_type,
-                                          json_body -> 'response' -> 'patient') as t
-        ),
+                select t.*,
+                       f_mis_persons8find(t.fname, t.mname, t.lname, t.birthdate, t.snils) as id
+                from jsonb_populate_recordset(null::public.ext_system_person_type,
+                                              json_body -> 'response' -> 'patient') as t
+             ),
              ins_person(id) as (
                  select er.f_mis_persons8add(
                                 null,
@@ -212,7 +216,7 @@ BEGIN
                  from ins_person as p
                  where n_user_id is not null
              ),
-             upd as (
+             upd_person as (
                  select er.f_mis_persons8upd(
                                 t.id,
                                 p.er_users,
@@ -230,12 +234,67 @@ BEGIN
                           join er.er_persons as p using (id)
                  where t.id is not null
              ),
+             new_patient as (
+                 select id::bigint as id
+                 from patient
+                 where id is not null
+                 union
+                 select p.id::bigint as id
+                 from ins_person as p,
+                      upd_person
+                 where p.id is not null
+             )
+        select id
+        into n_person_id
+        from new_patient;
+
+        if n_person_id is null then
+            raise exception 'Не удалось создать пациента с uuid  %', u_agent_id;
+        end if;
+
+        with polis as (
+            select t.*,
+                   f_mis_person_polis8find(t.polis_ser, t.polis_num, t.kind) as id
+            from jsonb_populate_recordset(null::public.ext_system_polis_type,
+                                          json_body -> 'response' -> 'policies') as t
+        ),
+             ins_polis(id) as (
+                 select er.f_mis_person_polis8add(
+                                t.polis_id,
+                                n_person_id,
+                                t.type_id,
+                                t.kind,
+                                t.polis_ser,
+                                t.polis_num,
+                                t.p_date_beg::date,
+                                t.p_date_end::date,
+                                null::jsonb
+                            )
+                 from polis as t
+                 where t.id is null
+             ),
+             upd_polis as (
+                 select er.f_mis_person_polis8upd(
+                                t.id,
+                                t.polis_id,
+                                n_person_id,
+                                t.type_id,
+                                t.kind,
+                                t.polis_ser,
+                                t.polis_num,
+                                t.p_date_beg::date,
+                                t.p_date_end::date,
+                                null::jsonb
+                            )
+                 from polis as t
+                 where t.id is null
+             ),
              cnt as (
                  select count(1) as n
-                 from ins_user_person p
+                 from ins_polis
                  union all
                  select count(1) as n
-                 from upd
+                 from upd_polis
              )
         select sum(n)
         into n_cnt
@@ -254,6 +313,7 @@ BEGIN
 END;
 $$
     LANGUAGE plpgsql;
+
 
 
 --select public.kafka_load_person('get-about-me')
