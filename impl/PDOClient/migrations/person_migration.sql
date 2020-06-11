@@ -641,6 +641,38 @@ BEGIN
         into n_cnt
         from cnt;
 
+        with anthropometry as (
+            select t.*
+            from jsonb_populate_recordset(null::public.ext_system_anthropometry_type,
+                                          json_body -> 'response' -> 'anthropometry') as t
+            where t.meas_date is not null
+        ),
+             ins(id, specification) as (
+                 select er.f_mis_person_anthropometry8add(
+                                uuid_generate_v1(),
+                                t.meas_date,
+                                t.constitution,
+                                n_person_id
+                            ), t.specification::jsonb
+                 from anthropometry as t
+             ),
+             sp as (
+                select ins.id, t.*
+                from ins, jsonb_populate_recordset(null::public.ext_system_anthropometry_sp_type,
+                                                   ins.specification) as t
+            ),
+             ins_sp(id) as (
+                select er.f_mis_person_anthropometry_sp8add(
+                               t.id,
+                               uuid_generate_v1(),
+                               t.anthrop,
+                               t.a_value
+                           )
+                from sp as t
+            )
+        select count(1)
+        into n_cnt
+        from ins_sp;
 
         DELETE FROM public.kafka_result WHERE CURRENT OF cur_res;
 
