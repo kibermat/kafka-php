@@ -404,6 +404,153 @@ BEGIN
         into n_cnt
         from cnt;
 
+
+        with recipes as (
+            select t.*,
+                   f_ext_entity_values8find(n_system, n_entity, t.mo_id)             as mo_ext_id,
+                   f_ext_entity_values8rebuild(n_system, n_entity, t."recipe_uid", coalesce(t.action, 'add')) as ext_id
+            from jsonb_populate_recordset(null::public.ext_system_recipe_type,
+                                          json_body -> 'response' -> 'recipes') as t
+            where t."code" is not null
+        ), cte as (
+            select t.*,
+                   s.recipe_id as recipe_uuid,
+                   s.id as old_id
+            from recipes as t
+                     left join er.er_person_recipe as s on s.ext_id = t.ext_id
+        ),
+             ins_recipes(id, recipe_uid) as (
+                 select er.f_mis_person_recipe8add(
+                                t.ext_id,
+                                uuid_generate_v1(),
+                                n_person_id,
+                                mo.id,
+                                false,
+                                null::bigint,
+                                t.visit_id,
+                                t.code::text,
+                                null::text,
+                                t.datecreate,
+                                null::integer,
+                                null::text,
+                                null::text,
+                                t."FullInfo"::jsonb
+                            ) as id, t."recipe_uid"
+                 from cte as t
+                          left join er.er_mo mo ON (t.mo_ext_id = mo.ext_id)
+                 where t.old_id is null
+                   and "action" = 'add'
+             ),
+             upd_recipes(none, id, recipe_uid) as (
+                 select er.f_mis_person_recipe8upd(
+                                t.old_id,
+                                t.ext_id,
+                                uuid_generate_v1(),
+                                n_person_id,
+                                mo.id,
+                                false,
+                                null::bigint,
+                                t.visit_id,
+                                t.code::text,
+                                null::text,
+                                t.datecreate,
+                                null::integer,
+                                null::text,
+                                null::text,
+                                t."FullInfo"::jsonb
+                            ), t.old_id as id, t."recipe_uid"
+                 from cte as t
+                          left join er.er_mo mo ON (t.mo_ext_id = mo.ext_id)
+                 where t.old_id is not null
+             ),
+             all_recipes(id, recipe_uid) as (
+                 select id, recipe_uid
+                 from ins_recipes
+                 union
+                 select id, recipe_uid
+                 from upd_recipes
+             ),
+             drugs as (
+                 select r.*, d.*,
+                        f_ext_entity_values8rebuild(n_system, n_entity, d."drug_uid", coalesce(d.action, 'add')) as ext_id
+                 from  all_recipes r join cte using (recipe_uid), jsonb_populate_recordset(null::public.ext_system_drugs_type, cte.drugs::jsonb) as d
+             ),
+             ins_drug(drug_id, recipe_id, use_method, pack_count) as (
+                 select er.f_mis_drug8add(
+                                t.ext_id,
+                                uuid_generate_v1(),
+                                t.drug,
+                                null::text,
+                                null::numeric,
+                                null::text,
+                                null::text,
+                                true,
+                                null::jsonb
+                            ) as drug_id, t.id as recipe_id, t.description as use_method, t.pack_count
+                 from drugs as t
+                          left join er.er_drug d using (ext_id)
+                 where d.ext_id is null
+             ),
+             upd_drug (none, drug_id, recipe_id, use_method, pack_count) as (
+                 select er.f_mis_drug8upd(
+                                d.id,
+                                t.ext_id,
+                                uuid_generate_v1(),
+                                t.drug,
+                                null::text,
+                                null::numeric,
+                                null::text,
+                                null::text,
+                                true,
+                                null::jsonb
+                            ) as none, d.id as drug_id, t.id as recipe_id, t.drug_uid, t.recipe_uid
+                 from drugs as t
+                          join er.er_drug d using (ext_id)
+             ),
+             recipe_drug as (
+                 select drug_id::bigint, recipe_id::bigint, use_method::text, pack_count::text
+                 from ins_drug
+                 union
+                 select drug_id::bigint, recipe_id::bigint, use_method::text, pack_count::text
+                 from upd_drug
+             ),
+             ins_recipe_drug as (
+                 select er.f_mis_recipe_drug8add(
+                                t.drug_id,
+                                t.recipe_id,
+                                t.pack_count,
+                                t.use_method,
+                                null::text
+                            )
+                 from recipe_drug as t
+                          left join er.er_recipe_drug as rd using (drug_id, recipe_id)
+                 where rd.id is null
+             ),
+             upd_recipe_drug as (
+                 select er.f_mis_recipe_drug8upd(
+                                rd.id,
+                                t.drug_id,
+                                t.recipe_id,
+                                t.pack_count,
+                                t.use_method,
+                                null::text
+                            )
+                 from recipe_drug as t
+                          left join er.er_recipe_drug as rd using (drug_id, recipe_id)
+                 where rd.id is null
+             ),
+             cnt as (
+                 select count(1) as n
+                 from ins_recipe_drug
+                 union
+                 select count(1) as n
+                 from upd_recipe_drug
+             )
+        select sum(n)
+        into n_cnt
+        from cnt;
+
+
         DELETE FROM public.kafka_result WHERE CURRENT OF cur_res;
 
     END LOOP;

@@ -294,7 +294,7 @@ begin
     into n_id
     from ext_entity_values t
     where t."system" = pn_system
-      and t."entity" = pn_entity
+--    and t."entity" = pn_entity
       and t."value" = pn_value
     limit 1;
 
