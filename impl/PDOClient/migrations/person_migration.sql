@@ -404,6 +404,96 @@ BEGIN
         into n_cnt
         from cnt;
 
+        with visit as (
+            select t.*,
+                   f_ext_entity_values8find(n_system, n_entity, t.mo_id) as mo_ext_id,
+                   f_ext_entity_values8find(n_system, n_entity, t.div_id) as div_ext_id,
+                   f_ext_entity_values8find(n_system, n_entity, t.direction_uid) as direction_ext_id,
+                   f_ext_entity_values8find(n_system, n_entity, t.resource_id) as resource_ext_id,
+                   f_ext_entity_values8rebuild(n_system, n_entity, t.vis_uid, coalesce("action", 'add')) as ext_id
+            from jsonb_populate_recordset(null::public.ext_system_visit_type,
+                                          json_body -> 'response' -> 'visits') as t
+            where t.name is not null
+        ),
+             cte as (
+                select
+                    ext.*,
+                    v.id as old_id,
+                    status.id as status_id,
+                    mo.id as mo_id,
+                    div.id as div_id,
+                    dir.id as dir_id,
+                    res.id as res_id
+                from visit as ext
+                         join er.er_mo as mo on mo.ext_id = ext.mo_ext_id
+                         join er.er_mo as div on div.ext_id = ext.div_ext_id
+                         left join er.er_person_visit as v on v.ext_id = ext.ext_id
+                         left join er.er_visit_status as status on status.scode = ext.status
+                         left join er.er_directions as dir on dir.ext_id = ext.direction_ext_id
+                         left join er.er_resources as res on res.ext_id = ext.resource_ext_id
+             ),
+             ins as (
+                 select er.f_mis_person_visit8add(
+                                t.ext_id,
+                                uuid_generate_v1(),
+                                t.mo_id,
+                                t.div_id,
+                                n_person_id,
+                                t.res_id,
+                                t.dir_id,
+                                t."service",
+                                t.emp_fio,
+                                t.vis_date,
+                                null::date,
+                                t.cost,
+                                t.recommend,
+                                t.status_id,
+                                t.status_desc,
+                                t.source,
+                                t.source_desc,
+                                null::bool,
+                                t."FullInfo"::jsonb
+                            )
+                 from cte as t
+                 where t.old_id is null
+                   and "action" = 'add'
+             ),
+             upd as (
+                 select er.f_mis_person_visit8upd(
+                                t.old_id,
+                                t.ext_id,
+                                uuid_generate_v1(),
+                                t.mo_id,
+                                t.div_id,
+                                n_person_id,
+                                t.res_id,
+                                t.dir_id,
+                                t."service",
+                                t.emp_fio,
+                                t.vis_date,
+                                null::date,
+                                t.cost,
+                                t.recommend,
+                                t.status_id,
+                                t.status_desc,
+                                t.source,
+                                t.source_desc,
+                                null::bool,
+                                t."FullInfo"::jsonb
+                            )
+                 from cte as t
+                 where t.old_id is not null
+             ),
+             cnt as (
+                 select count(1) as n
+                 from ins
+                 union all
+                 select count(1) as n
+                 from upd
+             )
+        select sum(n)
+        into n_cnt
+        from cnt;
 
         with recipes as (
             select t.*,
@@ -412,13 +502,14 @@ BEGIN
             from jsonb_populate_recordset(null::public.ext_system_recipe_type,
                                           json_body -> 'response' -> 'recipes') as t
             where t."code" is not null
-        ), cte as (
-            select t.*,
-                   s.recipe_id as recipe_uuid,
-                   s.id as old_id
-            from recipes as t
-                     left join er.er_person_recipe as s on s.ext_id = t.ext_id
         ),
+             cte as (
+                select t.*,
+                       s.recipe_id as recipe_uuid,
+                       s.id as old_id
+                from recipes as t
+                         left join er.er_person_recipe as s on s.ext_id = t.ext_id
+             ),
              ins_recipes(id, recipe_uid) as (
                  select er.f_mis_person_recipe8add(
                                 t.ext_id,

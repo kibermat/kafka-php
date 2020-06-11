@@ -25,6 +25,9 @@ $$
             create type public.ext_system_visit_type as
             (
                 "vis_uid"       bigint,
+                "mo_id"         bigint,
+                "div_id"        bigint,
+                "resource_id"   bigint,
                 "mo"            text,
                 "mo_name"       text,
                 "service"       text,
@@ -38,6 +41,7 @@ $$
                 "source_desc"   text,
                 "direction_uid" bigint,
                 "dir_info"      text,
+                "action"        text,
                 "FullInfo"      jsonb
             );
         END IF;
