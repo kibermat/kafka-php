@@ -674,6 +674,62 @@ BEGIN
         into n_cnt
         from ins_sp;
 
+        with bulletins as (
+            select t.*,
+                   f_ext_entity_values8find(n_system, n_entity, t.mo_uid)    as mo_ext_id,
+                   f_ext_entity_values8find(n_system, n_entity, t.visit_uid) as visit_ext_id
+            from jsonb_populate_recordset(null::public.ext_system_bulletin_type,
+                                          json_body -> 'response' -> 'bulletins') as t
+            where t."types" is not null
+        ),
+             ins(id) as (
+                 select er.f_mis_person_bulletin8add(
+                                t.bull_uid,
+                                uuid_generate_v1(),
+                                n_person_id,
+                                mo.id,
+                                t.code,
+                                t.types,
+                                null::integer,
+                                t.datecreate,
+                                null::text,
+                                t.datecreate,
+                                t.dateend,
+                                visit.id,
+                                t."FullInfo"::jsonb
+                            )
+                 from bulletins as t
+                          join er.er_mo as mo on mo.ext_id = t.mo_ext_id
+                          left join er.er_person_visit as visit on visit.ext_id = t.visit_ext_id
+             )
+        select count(1)
+        from ins;
+
+        with vaccinations as (
+            select t.*,
+                   f_ext_entity_values8find(n_system, n_entity, t.mo_uid)    as mo_ext_id
+            from jsonb_populate_recordset(null::public.ext_system_vaccination_type,
+                                          json_body -> 'response' -> 'vaccinations') as t
+            where t."type" is not null
+        ),
+             ins(id) as (
+                 select er.f_mis_person_vaccination8add(
+                                t.vac_uid,
+                                uuid_generate_v1(),
+                                n_person_id,
+                                mo.id,
+                                t.title,
+                                t.datecreate,
+                                null::integer,
+                                true,
+                                t."FullInfo"::jsonb
+                            )
+                 from vaccinations as t
+                          join er.er_mo as mo on mo.ext_id = t.mo_ext_id
+             )
+        select count(1)
+        from ins;
+
         DELETE FROM public.kafka_result WHERE CURRENT OF cur_res;
 
     END LOOP;
