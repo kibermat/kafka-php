@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS ext_systems
 COMMENT ON TABLE ext_systems IS 'Внешние системы ';
 COMMENT ON COLUMN ext_systems.id IS 'Id';
 
+DROP FUNCTION IF EXISTS f_ext_systems8add(ps_code text, ps_description text, ps_url text);
 create or replace function f_ext_systems8add(ps_code text, ps_description text, ps_url text) returns integer
     security definer
     language plpgsql
@@ -320,7 +321,7 @@ begin
         n_id := null;
     end if;
 
-    if ps_action in ('add', 'upd') then
+    if ps_action is null or ps_action in ('add', 'upd') then
         n_id := f_ext_entity_values8add(pn_system, pn_entity, pn_value);
     end if;
 

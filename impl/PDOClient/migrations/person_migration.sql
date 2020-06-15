@@ -194,7 +194,7 @@ BEGIN
         with patient as (
             select t.*,
                    f_mis_persons8find(t.fname, t.mname, t.lname, t.birthdate, t.snils) as id
-            from jsonb_populate_recordset(null::public.ext_system_person_type,
+            from jsonb_populate_record(null::public.ext_system_person_type,
                                           json_body -> 'response' -> 'patient') as t
         ),
              ins_person(id) as (
@@ -212,12 +212,12 @@ BEGIN
                  from patient as t
                  where t.id is null
              ),
-             ins_user_person("user", person) as (
-                 select f_user_person8add(n_user_id, p.id, n_system)
+             ins_user_person("user", "id") as (
+                 select f_user_person8add(n_user_id, p.id, n_system), p.id
                  from ins_person as p
                  where n_user_id is not null
              ),
-             upd_person as (
+             upd_person("none", "user", "id", "r") as (
                  select er.f_mis_persons8upd(
                                 t.id,
                                 p.er_users,
@@ -229,7 +229,7 @@ BEGIN
                                 t.gender::integer,
                                 p.id_doc,
                                 t.snils
-                            ),
+                            ), t.id, p.id,
                         f_user_person8add(n_user_id, p.id, n_system)
                  from patient as t
                           join er.er_persons as p using (id)
@@ -237,12 +237,11 @@ BEGIN
              ),
              new_patient as (
                  select id::bigint as id
-                 from patient
+                 from upd_person
                  where id is not null
                  union
                  select p.id::bigint as id
-                 from ins_person as p,
-                      upd_person
+                 from ins_user_person as p
                  where p.id is not null
              )
         select id
@@ -254,17 +253,18 @@ BEGIN
         end if;
 
         with polis as (
-            select t.*,
-                   f_mis_person_polis8find(t.polis_ser, t.polis_num, t.kind) as id
+            select t.*, k.id as kind_id,
+                   f_mis_person_polis8find(t.polis_ser, t.polis_num, null) as id
             from jsonb_populate_recordset(null::public.ext_system_polis_type,
                                           json_body -> 'response' -> 'policies') as t
+                join er.er_polis_kind as k on k.code = t.kind
         ),
              ins_polis(id) as (
                  select er.f_mis_person_polis8add(
-                                t.polis_id,
+                                uuid_generate_v1(),
                                 n_person_id,
                                 t.type_id,
-                                t.kind,
+                                t.kind_id,
                                 t.polis_ser,
                                 t.polis_num,
                                 t.p_date_beg::date,
@@ -277,10 +277,10 @@ BEGIN
              upd_polis as (
                  select er.f_mis_person_polis8upd(
                                 t.id,
-                                t.polis_id,
+                                uuid_generate_v1(),
                                 n_person_id,
                                 t.type_id,
-                                t.kind,
+                                t.kind_id,
                                 t.polis_ser,
                                 t.polis_num,
                                 t.p_date_beg::date,
@@ -288,7 +288,7 @@ BEGIN
                                 null::jsonb
                             )
                  from polis as t
-                 where t.id is null
+                 where t.id is not null
              ),
              cnt as (
                  select count(1) as n
@@ -315,8 +315,9 @@ BEGIN
                         mo.id  as mo,
                         div.id as div
                  from sites as t
-                          left join er.er_mo mo ON (t.mo_ext_id = mo.ext_id)
-                          left join er.er_mo div ON (t.div_ext_id = div.ext_id)
+                      join er.er_mo mo ON (t.mo_ext_id = mo.ext_id)
+                      left join er.er_mo div ON (t.div_ext_id = div.ext_id)
+                 where t.div_ext_id is null or div.id is not null
              ),
              cte as (
                  select t.*,
@@ -333,7 +334,7 @@ BEGIN
                                 div,
                                 t."SITE_CODE",
                                 t."SITE_NAME",
-                                t."DATE_BEGIN"::date,
+                                coalesce(t."DATE_BEGIN"::date, current_date),
                                 t."DATE_END"::date,
                                 t."FullInfo"::jsonb
                             ), t.ext_id
@@ -386,7 +387,6 @@ BEGIN
                                 n_person_id,
                                 true,
                                 p."PURPOSE",
-                                p."TYPE",
                                 p."TYPE",
                                 null::jsonb)
                  from er.er_person_sites as ps

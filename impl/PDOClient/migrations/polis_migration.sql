@@ -1,6 +1,5 @@
 set search_path to er, public;
 
-
 DO
 $$
     begin
@@ -19,6 +18,18 @@ $$
         END IF;
     END
 $$;
+
+
+DO
+$$
+    begin
+        set search_path to er, public;
+        ALTER TABLE er_person_polis ALTER COLUMN add_info DROP NOT NULL;
+    exception
+        when others then raise notice 'pass %', sqlerrm;
+    END
+$$;
+
 
 create index if not exists i_er_person_polis_num
     on er.er_person_polis (pnum, pser);
