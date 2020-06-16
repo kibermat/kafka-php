@@ -1,11 +1,10 @@
-set search_path to er, public;
 
 DO
 $$
     begin
         if not exists(select true from pg_type where typname = 'ext_system_vaccination_type') then
-            drop type if exists public.ext_system_vaccination_type;
-            create type public.ext_system_vaccination_type as
+            drop type if exists ext_system_vaccination_type;
+            create type kafka.ext_system_vaccination_type as
             (
                 "vac_uid"    bigint,
                 "mo_uid"     bigint,
@@ -21,15 +20,14 @@ $$
     END
 $$;
 
+
 DO
 $$
     begin
-        set search_path to er, public;
-
-        ALTER TABLE er_person_vaccination
+        ALTER TABLE er.er_person_vaccination
             ADD COLUMN ext_id bigint default null;
-        comment on column er_person_vaccination.ext_id is 'Ссылка на внешний идентификатор';
-        ALTER TABLE er_person_vaccination
+        comment on column er.er_person_vaccination.ext_id is 'Ссылка на внешний идентификатор';
+        ALTER TABLE er.er_person_vaccination
             ADD CONSTRAINT fk_ext_entity_values_id FOREIGN KEY (ext_id) REFERENCES ext_entity_values (id) ON DELETE CASCADE;
 
     exception
@@ -38,8 +36,8 @@ $$
 $$;
 
 
-drop function if exists f_mis_person_vaccination8add(pn_ext_id bigint, pu_vac_id uuid, pn_person_id bigint, pn_mo_id bigint, ps_vac_info text, pd_plan_date date, pn_vac_type bigint, pb_is_allow boolean, pu_add_info jsonb);
-create function f_mis_person_vaccination8add(pn_ext_id bigint, pu_vac_id uuid, pn_person_id bigint, pn_mo_id bigint, ps_vac_info text, pd_plan_date date, pn_vac_type bigint, pb_is_allow boolean, pu_add_info jsonb) returns bigint
+drop function if exists kafka.f_ext_person_vaccination8add(pn_ext_id bigint, pu_vac_id uuid, pn_person_id bigint, pn_mo_id bigint, ps_vac_info text, pd_plan_date date, pn_vac_type bigint, pb_is_allow boolean, pu_add_info jsonb);
+create function kafka.f_ext_person_vaccination8add(pn_ext_id bigint, pu_vac_id uuid, pn_person_id bigint, pn_mo_id bigint, ps_vac_info text, pd_plan_date date, pn_vac_type bigint, pb_is_allow boolean, pu_add_info jsonb) returns bigint
     security definer
     language plpgsql
 as $$
@@ -80,11 +78,11 @@ begin
     return n_id;
 end;
 $$;
-alter function f_mis_person_vaccination8add(bigint, uuid, bigint, bigint, text, date, bigint, boolean, jsonb) owner to dev;
+alter function kafka.f_ext_person_vaccination8add(bigint, uuid, bigint, bigint, text, date, bigint, boolean, jsonb) owner to dev;
 
 
-drop function if exists f_mis_person_vaccination8upd(pn_id bigint, pn_ext_id bigint, pu_vac_id uuid, pn_person_id bigint, pn_mo_id bigint, ps_vac_info text, pd_plan_date date, pn_vac_type bigint, pb_is_allow boolean, pu_add_info jsonb);
-create function f_mis_person_vaccination8upd(pn_id bigint, pn_ext_id bigint, pu_vac_id uuid, pn_person_id bigint, pn_mo_id bigint, ps_vac_info text, pd_plan_date date, pn_vac_type bigint, pb_is_allow boolean, pu_add_info jsonb) returns void
+drop function if exists kafka.f_ext_person_vaccination8upd(pn_id bigint, pn_ext_id bigint, pu_vac_id uuid, pn_person_id bigint, pn_mo_id bigint, ps_vac_info text, pd_plan_date date, pn_vac_type bigint, pb_is_allow boolean, pu_add_info jsonb);
+create function kafka.f_ext_person_vaccination8upd(pn_id bigint, pn_ext_id bigint, pu_vac_id uuid, pn_person_id bigint, pn_mo_id bigint, ps_vac_info text, pd_plan_date date, pn_vac_type bigint, pb_is_allow boolean, pu_add_info jsonb) returns void
     security definer
     language plpgsql
 as $$
@@ -108,11 +106,11 @@ begin
 --     perform core.f_bp_after(pn_lpu,null,null,'er_person_vaccination_upd',pn_id);
 end;
 $$;
-alter function f_mis_person_vaccination8upd(bigint, bigint, uuid, bigint, bigint, text, date, bigint, boolean, jsonb) owner to dev;
+alter function kafka.f_ext_person_vaccination8upd(bigint, bigint, uuid, bigint, bigint, text, date, bigint, boolean, jsonb) owner to dev;
 
 
-drop function if exists f_mis_person_vaccination8del(pn_id bigint);
-create function f_mis_person_vaccination8del(pn_id bigint) returns void
+drop function if exists kafka.f_ext_person_vaccination8del(pn_id bigint);
+create function kafka.f_ext_person_vaccination8del(pn_id bigint) returns void
     security definer
     language plpgsql
 as $$
@@ -127,7 +125,7 @@ begin
 --     perform core.f_bp_after(pn_lpu,null,null,'er_person_vaccination_del',pn_id);
 end;
 $$;
-alter function f_mis_person_vaccination8del(bigint) owner to dev;
+alter function kafka.f_ext_person_vaccination8del(bigint) owner to dev;
 
 
 

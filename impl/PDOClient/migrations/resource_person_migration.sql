@@ -1,14 +1,11 @@
-set search_path to er, public;
 
 DO
 $$
     begin
-        set search_path to er, public;
-
-        ALTER TABLE er_persons_resources
+        ALTER TABLE er.er_persons_resources
             ADD COLUMN ext_id bigint default null;
-        comment on column er_persons_resources.ext_id is 'Идентификатор на внешней системе';
-        ALTER TABLE er_persons_resources
+        comment on column er.er_persons_resources.ext_id is 'Идентификатор на внешней системе';
+        ALTER TABLE er.er_persons_resources
             ADD CONSTRAINT fk_ext_id FOREIGN KEY (ext_id) REFERENCES ext_entity_values (id) ON DELETE CASCADE;
 
     exception
@@ -16,16 +13,13 @@ $$
     END
 $$;
 
-commit;
-set search_path to public;
-
 
 DO
 $$
     begin
         if not exists(select true from pg_type where typname = 'ext_system_resource_person_type') then
-            --drop type if exists public.ext_system_resource_person_type;
-            create type public.ext_system_resource_person_type as
+            drop type if exists ext_system_resource_person_type;
+            create type kafka.ext_system_resource_person_type as
             (
                 "id"        text,
                 "name"      text,
@@ -38,8 +32,8 @@ $$
     END
 $$;
 
-drop function if exists er.f_mis_persons_resources8add(pn_ext_id bigint, pn_resource_id bigint, pn_person_id bigint, pb_reg_allow boolean, pb_is_allow boolean, pu_add_info jsonb);
-create function er.f_mis_persons_resources8add(pn_ext_id bigint, pn_resource_id bigint, pn_person_id bigint,
+drop function if exists kafka.f_ext_persons_resources8add(pn_ext_id bigint, pn_resource_id bigint, pn_person_id bigint, pb_reg_allow boolean, pb_is_allow boolean, pu_add_info jsonb);
+create function kafka.f_ext_persons_resources8add(pn_ext_id bigint, pn_resource_id bigint, pn_person_id bigint,
                                                pb_reg_allow boolean, pb_is_allow boolean,
                                                pu_add_info jsonb) returns bigint
     security definer
@@ -74,11 +68,11 @@ begin
     return n_id;
 end;
 $$;
-alter function er.f_mis_persons_resources8add(bigint, bigint, bigint, boolean, boolean, jsonb) owner to dev;
+alter function kafka.f_ext_persons_resources8add(bigint, bigint, bigint, boolean, boolean, jsonb) owner to dev;
 
 
-drop function if exists er.f_mis_persons_resources8upd(pn_id bigint, pn_ext_id bigint, pn_resource_id bigint, pn_person_id bigint, pb_reg_allow boolean, pb_is_allow boolean, pu_add_info jsonb);
-create function er.f_mis_persons_resources8upd(pn_id bigint, pn_ext_id bigint, pn_resource_id bigint,
+drop function if exists kafka.f_ext_persons_resources8upd(pn_id bigint, pn_ext_id bigint, pn_resource_id bigint, pn_person_id bigint, pb_reg_allow boolean, pb_is_allow boolean, pu_add_info jsonb);
+create function kafka.f_ext_persons_resources8upd(pn_id bigint, pn_ext_id bigint, pn_resource_id bigint,
                                                pn_person_id bigint, pb_reg_allow boolean, pb_is_allow boolean,
                                                pu_add_info jsonb) returns bigint
     security definer
@@ -111,11 +105,11 @@ begin
     return n_id;
 end;
 $$;
-alter function er.f_mis_persons_resources8upd(bigint, bigint, bigint, bigint, boolean, boolean, jsonb) owner to dev;
+alter function kafka.f_ext_persons_resources8upd(bigint, bigint, bigint, bigint, boolean, boolean, jsonb) owner to dev;
 
 
-drop function if exists er.f_mis_persons_resources8del(pn_id bigint);
-create function er.f_mis_persons_resources8del(pn_id bigint) returns void
+drop function if exists kafka.f_ext_persons_resources8del(pn_id bigint);
+create function kafka.f_ext_persons_resources8del(pn_id bigint) returns void
     security definer
     language plpgsql
 as
@@ -133,10 +127,10 @@ begin
     --perform core.f_bp_after(pn_lpu,null,null,'er_persons_resources_del',pn_id);
 end;
 $$;
-alter function er.f_mis_persons_resources8del(bigint) owner to dev;
+alter function kafka.f_ext_persons_resources8del(bigint) owner to dev;
 
-drop function if exists public.kafka_load_resource_person(p_topic text);
-CREATE OR REPLACE FUNCTION public.kafka_load_resource_person(p_topic text)
+drop function if exists kafka.f_kafka_load_resource_person(p_topic text);
+CREATE OR REPLACE FUNCTION kafka.f_kafka_load_resource_person(p_topic text)
     RETURNS integer AS
 $$
 DECLARE
@@ -152,7 +146,7 @@ DECLARE
     n_ext_person_id bigint;
     cur_res CURSOR (p_topic TEXT)
         FOR select *
-            from public.kafka_result
+            from kafka.kafka_queue
             where method = p_topic
               and success
               and pg_try_advisory_xact_lock(id)
@@ -173,13 +167,13 @@ BEGIN
 
         select "system", "entity"
         into n_system, n_entity
-        from f_ext_system_entities8find(s_mis_code, p_topic);
+        from kafka.f_ext_system_entities8find(s_mis_code, p_topic);
 
         if not found then
             raise exception 'Нет реализации % для внешней системы %', p_topic, s_mis_code;
         end if;
 
-        n_person_id := f_mis_person8find(n_ext_person_id);
+        n_person_id := kafka.f_ext_person8find(n_ext_person_id);
 
         if n_person_id is null then
             raise exception 'Нет агента. Идентификатор внешней системы % ', n_ext_person_id;
@@ -193,22 +187,22 @@ BEGIN
                    split_part(t.id, '.', 1)                                           as snils,
                    cast(split_part(t.id, '.', 2) as bigint)                           as res_id,
                    cast(concat(n_person_id, split_part(t.id, '.', 2)) as bigint)      as _id,
-                   f_ext_entity_values8find(n_system, n_entity,
+                   kafka.f_ext_entity_values8find(n_system, n_entity,
                                             cast(split_part(t.id, '.', 2) as bigint)) as resource_ext_id
             from jsonb_populate_recordset(
-                         null::public.ext_system_resource_person_type,
+                         null::kafka.ext_system_resource_person_type,
                          json_body -> 'response' -> 'ResultSet' -> 'RowSet'
                      ) as t
         ),
              cte as (
-                 select f_ext_entity_values8rebuild(n_system, n_entity, t._id, "action_res") as ext_id,
+                 select kafka.f_ext_entity_values8rebuild(n_system, n_entity, t._id, "action_res") as ext_id,
                         res.id                                                               as resource_id,
                         t.*
                  from response as t
                           join er.er_resources as res on res.ext_id = t.resource_ext_id
              ),
              ins as (
-                 select er.f_mis_persons_resources8add(
+                 select kafka.f_ext_persons_resources8add(
                                 ext_id,
                                 resource_id,
                                 n_person_id,
@@ -224,7 +218,7 @@ BEGIN
 
         if array_length(arr_ids, 1) > 0 then
             with del as (
-                select er.f_mis_persons_resources8del(pr.id)
+                select kafka.f_ext_persons_resources8del(pr.id)
                 from er.er_persons_resources pr
                 where pr.person_id = n_person_id
                   and not (pr.id = any (arr_ids))
@@ -233,7 +227,7 @@ BEGIN
             into n_cnt
             from del;
 
-            DELETE FROM public.kafka_result WHERE CURRENT OF cur_res;
+            DELETE FROM kafka.kafka_queue WHERE CURRENT OF cur_res;
         end if;
 
     END LOOP;

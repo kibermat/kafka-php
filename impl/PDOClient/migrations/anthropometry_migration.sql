@@ -1,11 +1,10 @@
-set search_path to er, public;
 
 DO
 $$
     begin
         if not exists(select true from pg_type where typname = 'ext_system_anthropometry_type') then
-            drop type if exists public.ext_system_anthropometry_type;
-            create type public.ext_system_anthropometry_type as
+            --drop type if exists kafka.ext_system_anthropometry_type;
+            create type kafka.ext_system_anthropometry_type as
             (
                 "meas_date"     date,
                 "constitution"  text,
@@ -20,8 +19,8 @@ DO
 $$
     begin
         if not exists(select true from pg_type where typname = 'ext_system_anthropometry_sp_type') then
-            --drop type if exists public.ext_system_anthropometry_sp_type;
-            create type public.ext_system_anthropometry_sp_type as
+            --drop type if exists ext_system_anthropometry_sp_type;
+            create type kafka.ext_system_anthropometry_sp_type as
             (
                 "anthrop"     text,
                 "a_value"     numeric(10,2),
@@ -31,8 +30,8 @@ $$
     END
 $$;
 
-drop function if exists f_mis_person_anthropometry8add( pu_anthop_id uuid, pd_meas_date date, ps_constitution text, pn_person_id bigint);
-create function f_mis_person_anthropometry8add( pu_anthop_id uuid, pd_meas_date date, ps_constitution text, pn_person_id bigint) returns bigint
+drop function if exists kafka.f_ext_person_anthropometry8add( pu_anthop_id uuid, pd_meas_date date, ps_constitution text, pn_person_id bigint);
+create function kafka.f_ext_person_anthropometry8add( pu_anthop_id uuid, pd_meas_date date, ps_constitution text, pn_person_id bigint) returns bigint
     security definer
     language plpgsql
 as $$
@@ -63,10 +62,10 @@ begin
     return n_id;
 end;
 $$;
-alter function f_mis_person_anthropometry8add( uuid, date, text, bigint) owner to dev;
+alter function kafka.f_ext_person_anthropometry8add( uuid, date, text, bigint) owner to dev;
 
-drop function if exists f_mis_person_anthropometry8upd(pn_id bigint, pu_anthop_id uuid, pd_meas_date date, ps_constitution text, pn_person_id bigint);
-create function f_mis_person_anthropometry8upd(pn_id bigint, pu_anthop_id uuid, pd_meas_date date, ps_constitution text, pn_person_id bigint) returns void
+drop function if exists kafka.f_ext_person_anthropometry8upd(pn_id bigint, pu_anthop_id uuid, pd_meas_date date, ps_constitution text, pn_person_id bigint);
+create function kafka.f_ext_person_anthropometry8upd(pn_id bigint, pu_anthop_id uuid, pd_meas_date date, ps_constitution text, pn_person_id bigint) returns void
     security definer
     language plpgsql
 as $$
@@ -85,10 +84,10 @@ begin
 --     perform core.f_bp_after(pn_lpu,null,null,'er_person_anthropometry_upd',pn_id);
 end;
 $$;
-alter function f_mis_person_anthropometry8upd(bigint, uuid, date, text, bigint) owner to dev;
+alter function kafka.f_ext_person_anthropometry8upd(bigint, uuid, date, text, bigint) owner to dev;
 
-drop function if exists f_mis_person_anthropometry8del(pn_id bigint);
-create function f_mis_person_anthropometry8del(pn_id bigint) returns void
+drop function if exists kafka.f_ext_person_anthropometry8del(pn_id bigint);
+create function kafka.f_ext_person_anthropometry8del(pn_id bigint) returns void
     security definer
     language plpgsql
 as $$
@@ -103,10 +102,10 @@ begin
 --     perform core.f_bp_after(pn_lpu,null,null,'er_person_anthropometry_del',pn_id);
 end;
 $$;
-alter function f_mis_person_anthropometry8del(pn_id bigint) owner to dev;
+alter function kafka.f_ext_person_anthropometry8del(pn_id bigint) owner to dev;
 
-drop function if exists f_mis_person_anthropometry_sp8add(pn_pid bigint, pu_anthrop_sp_id uuid, ps_anthrop text, pn_a_value numeric, ps_meas_name text);
-create function f_mis_person_anthropometry_sp8add(pn_pid bigint, pu_anthrop_sp_id uuid, ps_anthrop text, pn_a_value numeric, ps_meas_name text) returns bigint
+drop function if exists kafka.f_ext_person_anthropometry_sp8add(pn_pid bigint, pu_anthrop_sp_id uuid, ps_anthrop text, pn_a_value numeric, ps_meas_name text);
+create function kafka.f_ext_person_anthropometry_sp8add(pn_pid bigint, pu_anthrop_sp_id uuid, ps_anthrop text, pn_a_value numeric, ps_meas_name text) returns bigint
     security definer
     language plpgsql
 as $$
@@ -139,6 +138,6 @@ begin
     return n_id;
 end;
 $$;
-alter function f_mis_person_anthropometry_sp8add(bigint, uuid, text, numeric, text) owner to dev;
+alter function kafka.f_ext_person_anthropometry_sp8add(bigint, uuid, text, numeric, text) owner to dev;
 
 

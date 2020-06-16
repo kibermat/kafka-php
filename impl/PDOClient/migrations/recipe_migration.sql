@@ -1,16 +1,12 @@
 
-set search_path to er, public;
-
 
 DO
 $$
     begin
-        set search_path to er, public;
-
-        ALTER TABLE er_person_recipe
+        ALTER TABLE er.er_person_recipe
             ADD COLUMN ext_id bigint default null;
-        comment on column er_person_recipe.ext_id is 'Ссылка на внешний идентификатор';
-        ALTER TABLE er_person_recipe
+        comment on column er.er_person_recipe.ext_id is 'Ссылка на внешний идентификатор';
+        ALTER TABLE er.er_person_recipe
             ADD CONSTRAINT fk_ext_entity_values_id FOREIGN KEY (ext_id) REFERENCES ext_entity_values (id) ON DELETE CASCADE;
 
     exception
@@ -22,12 +18,10 @@ $$;
 DO
 $$
     begin
-        set search_path to er, public;
-
-        ALTER TABLE er_drug
+        ALTER TABLE er.er_drug
             ADD COLUMN ext_id bigint default null;
-        comment on column er_drug.ext_id is 'Ссылка на внешний идентификатор';
-        ALTER TABLE er_drug
+        comment on column er.er_drug.ext_id is 'Ссылка на внешний идентификатор';
+        ALTER TABLE er.er_drug
             ADD CONSTRAINT fk_ext_entity_values_id FOREIGN KEY (ext_id) REFERENCES ext_entity_values (id) ON DELETE CASCADE;
 
     exception
@@ -40,8 +34,8 @@ DO
 $$
     begin
         if not exists(select true from pg_type where typname = 'ext_system_recipe_type') then
-            drop type if exists public.ext_system_recipe_type;
-            create type public.ext_system_recipe_type as
+            drop type if exists ext_system_recipe_type;
+            create type kafka.ext_system_recipe_type as
             (
                 "recipe_uid" bigint,
                 "mo_id"      bigint,
@@ -62,8 +56,8 @@ DO
 $$
     begin
         if not exists(select true from pg_type where typname = 'ext_system_drugs_type') then
-            drop type if exists public.ext_system_drugs_type;
-            create type public.ext_system_drugs_type as
+            drop type if exists ext_system_drugs_type;
+            create type kafka.ext_system_drugs_type as
             (
                 "drug_uid"    bigint,
                 "drug"        text,
@@ -76,8 +70,8 @@ $$
 $$;
 
 
-drop function if exists f_mis_person_recipe8add(pn_ext_id bigint, pu_recipe_id uuid, pn_person_id bigint, pn_mo_id bigint, pb_discount boolean, pn_dispensary_id bigint, pn_visit_id bigint, ps_r_ser text, ps_r_num text, pd_date_create date, pn_exp_period integer, ps_emp_fio text, ps_recomendation text, pu_add_info jsonb);
-create function f_mis_person_recipe8add(pn_ext_id bigint, pu_recipe_id uuid, pn_person_id bigint, pn_mo_id bigint, pb_discount boolean, pn_dispensary_id bigint, pn_visit_id bigint, ps_r_ser text, ps_r_num text, pd_date_create date, pn_exp_period integer, ps_emp_fio text, ps_recomendation text, pu_add_info jsonb) returns bigint
+drop function if exists kafka.f_ext_person_recipe8add(pn_ext_id bigint, pu_recipe_id uuid, pn_person_id bigint, pn_mo_id bigint, pb_discount boolean, pn_dispensary_id bigint, pn_visit_id bigint, ps_r_ser text, ps_r_num text, pd_date_create date, pn_exp_period integer, ps_emp_fio text, ps_recomendation text, pu_add_info jsonb);
+create function kafka.f_ext_person_recipe8add(pn_ext_id bigint, pu_recipe_id uuid, pn_person_id bigint, pn_mo_id bigint, pb_discount boolean, pn_dispensary_id bigint, pn_visit_id bigint, ps_r_ser text, ps_r_num text, pd_date_create date, pn_exp_period integer, ps_emp_fio text, ps_recomendation text, pu_add_info jsonb) returns bigint
     security definer
     language plpgsql
 as $$
@@ -128,11 +122,11 @@ begin
     return n_id;
 end;
 $$;
-alter function f_mis_person_recipe8add(bigint, uuid, bigint, bigint, boolean, bigint, bigint, text, text, date, integer, text, text, jsonb) owner to dev;
+alter function kafka.f_ext_person_recipe8add(bigint, uuid, bigint, bigint, boolean, bigint, bigint, text, text, date, integer, text, text, jsonb) owner to dev;
 
 
-drop function if exists f_mis_person_recipe8upd(pn_id bigint, pn_ext_id bigint, pu_recipe_id uuid, pn_person_id bigint, pn_mo_id bigint, pb_discount boolean, pn_dispensary_id bigint, pn_visit_id bigint, ps_r_ser text, ps_r_num text, pd_date_create date, pn_exp_period integer, ps_emp_fio text, ps_recomendation text, pu_add_info jsonb);
-create function f_mis_person_recipe8upd(pn_id bigint, pn_ext_id bigint, pu_recipe_id uuid, pn_person_id bigint, pn_mo_id bigint, pb_discount boolean, pn_dispensary_id bigint, pn_visit_id bigint, ps_r_ser text, ps_r_num text, pd_date_create date, pn_exp_period integer, ps_emp_fio text, ps_recomendation text, pu_add_info jsonb) returns void
+drop function if exists kafka.f_ext_person_recipe8upd(pn_id bigint, pn_ext_id bigint, pu_recipe_id uuid, pn_person_id bigint, pn_mo_id bigint, pb_discount boolean, pn_dispensary_id bigint, pn_visit_id bigint, ps_r_ser text, ps_r_num text, pd_date_create date, pn_exp_period integer, ps_emp_fio text, ps_recomendation text, pu_add_info jsonb);
+create function kafka.f_ext_person_recipe8upd(pn_id bigint, pn_ext_id bigint, pu_recipe_id uuid, pn_person_id bigint, pn_mo_id bigint, pb_discount boolean, pn_dispensary_id bigint, pn_visit_id bigint, ps_r_ser text, ps_r_num text, pd_date_create date, pn_exp_period integer, ps_emp_fio text, ps_recomendation text, pu_add_info jsonb) returns void
     security definer
     language plpgsql
 as $$
@@ -161,11 +155,11 @@ begin
 --     perform core.f_bp_after(pn_lpu,null,null,'er_person_recipe_upd',pn_id);
 end;
 $$;
-alter function f_mis_person_recipe8upd(bigint, bigint, uuid, bigint, bigint, boolean, bigint, bigint, text, text, date, integer, text, text, jsonb) owner to dev;
+alter function kafka.f_ext_person_recipe8upd(bigint, bigint, uuid, bigint, bigint, boolean, bigint, bigint, text, text, date, integer, text, text, jsonb) owner to dev;
 
 
-drop function if exists f_mis_person_recipe8del(pn_id bigint);
-create function f_mis_person_recipe8del(pn_id bigint) returns void
+drop function if exists kafka.f_ext_person_recipe8del(pn_id bigint);
+create function kafka.f_ext_person_recipe8del(pn_id bigint) returns void
     security definer
     language plpgsql
 as $$
@@ -180,11 +174,11 @@ begin
 --     perform core.f_bp_after(pn_lpu,null,null,'er_person_recipe_del',pn_id);
 end;
 $$;
-alter function f_mis_person_recipe8del(bigint) owner to dev;
+alter function kafka.f_ext_person_recipe8del(bigint) owner to dev;
 
 
-drop function if exists f_mis_recipe_drug8add(pn_drug_id bigint, pn_recipe_id bigint, ps_pack_count text, ps_use_method text, ps_recomendation text);
-create function f_mis_recipe_drug8add(pn_drug_id bigint, pn_recipe_id bigint, ps_pack_count text, ps_use_method text, ps_recomendation text) returns bigint
+drop function if exists kafka.f_ext_recipe_drug8add(pn_drug_id bigint, pn_recipe_id bigint, ps_pack_count text, ps_use_method text, ps_recomendation text);
+create function kafka.f_ext_recipe_drug8add(pn_drug_id bigint, pn_recipe_id bigint, ps_pack_count text, ps_use_method text, ps_recomendation text) returns bigint
     security definer
     language plpgsql
 as $$
@@ -217,11 +211,11 @@ begin
     return n_id;
 end;
 $$;
-alter function f_mis_recipe_drug8add(pn_drug_id bigint, pn_recipe_id bigint, ps_pack_count text, ps_use_method text, ps_recomendation text) owner to dev;
+alter function kafka.f_ext_recipe_drug8add(pn_drug_id bigint, pn_recipe_id bigint, ps_pack_count text, ps_use_method text, ps_recomendation text) owner to dev;
 
 
-drop function if exists f_mis_recipe_drug8upd(pn_id bigint, pn_drug_id bigint, pn_recipe_id bigint, ps_pack_count text, ps_use_method text, ps_recomendation text);
-create function f_mis_recipe_drug8upd(pn_id bigint, pn_drug_id bigint, pn_recipe_id bigint, ps_pack_count text, ps_use_method text, ps_recomendation text) returns void
+drop function if exists kafka.f_ext_recipe_drug8upd(pn_id bigint, pn_drug_id bigint, pn_recipe_id bigint, ps_pack_count text, ps_use_method text, ps_recomendation text);
+create function kafka.f_ext_recipe_drug8upd(pn_id bigint, pn_drug_id bigint, pn_recipe_id bigint, ps_pack_count text, ps_use_method text, ps_recomendation text) returns void
     security definer
     language plpgsql
 as $$
@@ -241,11 +235,11 @@ begin
 --     perform core.f_bp_after(pn_lpu,null,null,'er_recipe_drug_upd',pn_id);
 end;
 $$;
-alter function f_mis_recipe_drug8upd(bigint, bigint, bigint, text, text, text) owner to dev;
+alter function kafka.f_ext_recipe_drug8upd(bigint, bigint, bigint, text, text, text) owner to dev;
 
 
-drop function if exists f_mis_recipe_drug8del(pn_id bigint);
-create function f_mis_recipe_drug8del(pn_id bigint) returns void
+drop function if exists kafka.f_ext_recipe_drug8del(pn_id bigint);
+create function kafka.f_ext_recipe_drug8del(pn_id bigint) returns void
     security definer
     language plpgsql
 as $$
@@ -260,11 +254,11 @@ begin
 --     perform core.f_bp_after(pn_lpu,null,null,'er_recipe_drug_del',pn_id);
 end;
 $$;
-alter function f_mis_recipe_drug8del(bigint) owner to dev;
+alter function kafka.f_ext_recipe_drug8del(bigint) owner to dev;
 
 
-drop function if exists f_mis_drug8add(pn_ext_id bigint, pu_drug_id uuid, ps_drug_name text, ps_medform text, pn_dose numeric, ps_dose_mease text, ps_pack_numb text, pb_is_allow boolean, pu_add_info jsonb);
-create function f_mis_drug8add(pn_ext_id bigint, pu_drug_id uuid, ps_drug_name text, ps_medform text, pn_dose numeric, ps_dose_mease text, ps_pack_numb text, pb_is_allow boolean, pu_add_info jsonb) returns bigint
+drop function if exists kafka.f_ext_drug8add(pn_ext_id bigint, pu_drug_id uuid, ps_drug_name text, ps_medform text, pn_dose numeric, ps_dose_mease text, ps_pack_numb text, pb_is_allow boolean, pu_add_info jsonb);
+create function kafka.f_ext_drug8add(pn_ext_id bigint, pu_drug_id uuid, ps_drug_name text, ps_medform text, pn_dose numeric, ps_dose_mease text, ps_pack_numb text, pb_is_allow boolean, pu_add_info jsonb) returns bigint
     security definer
     language plpgsql
 as $$
@@ -305,11 +299,11 @@ begin
     return n_id;
 end;
 $$;
-alter function f_mis_drug8add(bigint, uuid, text, text, numeric, text, text, boolean, jsonb) owner to dev;
+alter function kafka.f_ext_drug8add(bigint, uuid, text, text, numeric, text, text, boolean, jsonb) owner to dev;
 
 
-drop function if exists f_mis_drug8upd(pn_id bigint, pn_ext_id bigint, pu_drug_id uuid, ps_drug_name text, ps_medform text, pn_dose numeric, ps_dose_mease text, ps_pack_numb text, pb_is_allow boolean, pu_add_info jsonb);
-create function f_mis_drug8upd(pn_id bigint, pn_ext_id bigint, pu_drug_id uuid, ps_drug_name text, ps_medform text, pn_dose numeric, ps_dose_mease text, ps_pack_numb text, pb_is_allow boolean, pu_add_info jsonb) returns void
+drop function if exists kafka.f_ext_drug8upd(pn_id bigint, pn_ext_id bigint, pu_drug_id uuid, ps_drug_name text, ps_medform text, pn_dose numeric, ps_dose_mease text, ps_pack_numb text, pb_is_allow boolean, pu_add_info jsonb);
+create function kafka.f_ext_drug8upd(pn_id bigint, pn_ext_id bigint, pu_drug_id uuid, ps_drug_name text, ps_medform text, pn_dose numeric, ps_dose_mease text, ps_pack_numb text, pb_is_allow boolean, pu_add_info jsonb) returns void
     security definer
     language plpgsql
 as $$
@@ -333,11 +327,11 @@ begin
 --     perform core.f_bp_after(pn_lpu,null,null,'er_drug_upd',pn_id);
 end;
 $$;
-alter function f_mis_drug8upd(bigint, bigint, uuid, text, text, numeric, text, text, boolean, jsonb) owner to dev;
+alter function kafka.f_ext_drug8upd(bigint, bigint, uuid, text, text, numeric, text, text, boolean, jsonb) owner to dev;
 
 
-drop function if exists f_mis_drug8del(pn_id bigint);
-create function f_mis_drug8del(pn_id bigint) returns void
+drop function if exists kafka.f_ext_drug8del(pn_id bigint);
+create function kafka.f_ext_drug8del(pn_id bigint) returns void
     security definer
     language plpgsql
 as $$
@@ -352,7 +346,7 @@ begin
 --     perform core.f_bp_after(pn_lpu,null,null,'er_drug_del',pn_id);
 end;
 $$;
-alter function f_mis_drug8del(bigint) owner to dev;
+alter function kafka.f_ext_drug8del(bigint) owner to dev;
 
 
---select public.kafka_load_recipe('get-about-me')
+--select kafka.f_kafka_load_recipe('get-about-me')

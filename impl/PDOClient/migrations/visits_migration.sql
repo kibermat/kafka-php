@@ -1,14 +1,11 @@
-set search_path to er, public;
 
 DO
 $$
     begin
-        set search_path to er, public;
-
-        ALTER TABLE er_person_visit
+        ALTER TABLE er.er_person_visit
             ADD COLUMN ext_id bigint default null;
-        comment on column er_person_visit.ext_id is 'Ссылка на внешний идентификатор';
-        ALTER TABLE er_person_visit
+        comment on column er.er_person_visit.ext_id is 'Ссылка на внешний идентификатор';
+        ALTER TABLE er.er_person_visit
             ADD CONSTRAINT fk_ext_entity_values_id FOREIGN KEY (ext_id) REFERENCES ext_entity_values (id) ON DELETE CASCADE;
 
     exception
@@ -21,8 +18,8 @@ DO
 $$
     begin
         if not exists(select true from pg_type where typname = 'ext_system_visit_type') then
-            drop type if exists public.ext_system_visit_type;
-            create type public.ext_system_visit_type as
+            --drop type if exists ext_system_visit_type;
+            create type kafka.ext_system_visit_type as
             (
                 "vis_uid"       bigint,
                 "mo_id"         bigint,
@@ -49,8 +46,8 @@ $$
 $$;
 
 
-drop function if exists f_mis_person_visit8add(pn_ext_id bigint, pu_visit_id uuid, pn_mo_id bigint, pn_div_id bigint, pn_person_id bigint, pn_resource_id bigint, pn_direction_id bigint, ps_service text, ps_emp_fio text, pd_vis_date date, pd_dir_date date, pn_cost numeric, ps_recomendation text, pn_status_id bigint, ps_status_description text, ps_source_code text, ps_source_description text, pb_boked boolean, pu_add_info jsonb);
-create function f_mis_person_visit8add(pn_ext_id bigint, pu_visit_id uuid, pn_mo_id bigint, pn_div_id bigint, pn_person_id bigint, pn_resource_id bigint, pn_direction_id bigint, ps_service text, ps_emp_fio text, pd_vis_date date, pd_dir_date date, pn_cost numeric, ps_recomendation text, pn_status_id bigint, ps_status_description text, ps_source_code text, ps_source_description text, pb_boked boolean, pu_add_info jsonb) returns bigint
+drop function if exists kafka.f_ext_person_visit8add(pn_ext_id bigint, pu_visit_id uuid, pn_mo_id bigint, pn_div_id bigint, pn_person_id bigint, pn_resource_id bigint, pn_direction_id bigint, ps_service text, ps_emp_fio text, pd_vis_date date, pd_dir_date date, pn_cost numeric, ps_recomendation text, pn_status_id bigint, ps_status_description text, ps_source_code text, ps_source_description text, pb_boked boolean, pu_add_info jsonb);
+create function kafka.f_ext_person_visit8add(pn_ext_id bigint, pu_visit_id uuid, pn_mo_id bigint, pn_div_id bigint, pn_person_id bigint, pn_resource_id bigint, pn_direction_id bigint, ps_service text, ps_emp_fio text, pd_vis_date date, pd_dir_date date, pn_cost numeric, ps_recomendation text, pn_status_id bigint, ps_status_description text, ps_source_code text, ps_source_description text, pb_boked boolean, pu_add_info jsonb) returns bigint
     security definer
     language plpgsql
 as $$
@@ -111,11 +108,11 @@ begin
     return n_id;
 end;
 $$;
-alter function f_mis_person_visit8add(bigint, uuid, bigint, bigint, bigint, bigint, bigint, text, text, date, date, numeric, text, bigint, text, text, text, boolean, jsonb) owner to dev;
+alter function kafka.f_ext_person_visit8add(bigint, uuid, bigint, bigint, bigint, bigint, bigint, text, text, date, date, numeric, text, bigint, text, text, text, boolean, jsonb) owner to dev;
 
 
-drop function if exists f_mis_person_visit8upd(pn_id bigint, pn_ext_id bigint, pu_visit_id uuid, pn_mo_id bigint, pn_div_id bigint, pn_person_id bigint, pn_resource_id bigint, pn_direction_id bigint, ps_service text, ps_emp_fio text, pd_vis_date date, pd_dir_date date, pn_cost numeric, ps_recomendation text, pn_status_id bigint, ps_status_description text, ps_source_code text, ps_source_description text, pb_boked boolean, pu_add_info jsonb);
-create function f_mis_person_visit8upd(pn_id bigint, pn_ext_id bigint, pu_visit_id uuid, pn_mo_id bigint, pn_div_id bigint, pn_person_id bigint, pn_resource_id bigint, pn_direction_id bigint, ps_service text, ps_emp_fio text, pd_vis_date date, pd_dir_date date, pn_cost numeric, ps_recomendation text, pn_status_id bigint, ps_status_description text, ps_source_code text, ps_source_description text, pb_boked boolean, pu_add_info jsonb) returns void
+drop function if exists kafka.f_ext_person_visit8upd(pn_id bigint, pn_ext_id bigint, pu_visit_id uuid, pn_mo_id bigint, pn_div_id bigint, pn_person_id bigint, pn_resource_id bigint, pn_direction_id bigint, ps_service text, ps_emp_fio text, pd_vis_date date, pd_dir_date date, pn_cost numeric, ps_recomendation text, pn_status_id bigint, ps_status_description text, ps_source_code text, ps_source_description text, pb_boked boolean, pu_add_info jsonb);
+create function kafka.f_ext_person_visit8upd(pn_id bigint, pn_ext_id bigint, pu_visit_id uuid, pn_mo_id bigint, pn_div_id bigint, pn_person_id bigint, pn_resource_id bigint, pn_direction_id bigint, ps_service text, ps_emp_fio text, pd_vis_date date, pd_dir_date date, pn_cost numeric, ps_recomendation text, pn_status_id bigint, ps_status_description text, ps_source_code text, ps_source_description text, pb_boked boolean, pu_add_info jsonb) returns void
     security definer
     language plpgsql
 as $$
@@ -149,11 +146,11 @@ begin
 --     perform core.f_bp_after(pn_lpu,null,null,'er_person_visit_upd',pn_id);
 end;
 $$;
-alter function f_mis_person_visit8upd(bigint, bigint, uuid, bigint, bigint, bigint, bigint, bigint, text, text, date, date, numeric, text, bigint, text, text, text, boolean, jsonb) owner to dev;
+alter function kafka.f_ext_person_visit8upd(bigint, bigint, uuid, bigint, bigint, bigint, bigint, bigint, text, text, date, date, numeric, text, bigint, text, text, text, boolean, jsonb) owner to dev;
 
 
-drop function if exists f_mis_person_visit8del(pn_id bigint);
-create function f_mis_person_visit8del(pn_id bigint) returns void
+drop function if exists kafka.f_ext_person_visit8del(pn_id bigint);
+create function kafka.f_ext_person_visit8del(pn_id bigint) returns void
     security definer
     language plpgsql
 as $$
@@ -168,5 +165,5 @@ begin
 --     perform core.f_bp_after(pn_lpu,null,null,'er_person_visit_del',pn_id);
 end;
 $$;
-alter function f_mis_person_visit8del(bigint) owner to dev;
+alter function kafka.f_ext_person_visit8del(bigint) owner to dev;
 

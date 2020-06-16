@@ -1,17 +1,13 @@
 
-set search_path to er, public;
-
-
 DO
 $$
     begin
-        set search_path to er, public;
 
-        ALTER TABLE er_sites
+        ALTER TABLE er.er_sites
             ADD COLUMN ext_id bigint default null;
-        comment on column er_sites.ext_id is 'Ссылка на внешний идентификатор';
-        ALTER TABLE er_sites
-            ADD CONSTRAINT fk_ext_entity_values_id FOREIGN KEY (ext_id) REFERENCES ext_entity_values (id) ON DELETE SET DEFAULT;
+        comment on column er.er_sites.ext_id is 'Ссылка на внешний идентификатор';
+        ALTER TABLE er.er_sites
+            ADD CONSTRAINT fk_ext_entity_values_id FOREIGN KEY (ext_id) REFERENCES ext_entity_values (id) ON DELETE SET NULL;
 
     exception
         when others then raise notice 'pass %', sqlerrm;
@@ -23,8 +19,8 @@ DO
 $$
     begin
         if not exists(select true from pg_type where typname = 'ext_system_sites_type') then
-             drop type if exists public.ext_system_sites_type;
-            create type public.ext_system_sites_type as
+            --drop type if exists ext_system_sites_type;
+            create type kafka.ext_system_sites_type as
             (
                 "SITE_ID"     bigint,
                 "SITE_CODE"   text,
@@ -43,8 +39,8 @@ $$
 $$;
 
 
-drop function if exists f_mis_sites8add(pn_ext_id bigint, pu_site_id uuid, pn_mo_id bigint, pn_div_id bigint, ps_site_code text, ps_site_name text, pd_date_begin date, pd_date_end date, pu_add_info jsonb);
-create function f_mis_sites8add(pn_ext_id bigint, pu_site_id uuid, pn_mo_id bigint, pn_div_id bigint, ps_site_code text, ps_site_name text, pd_date_begin date, pd_date_end date, pu_add_info jsonb) returns bigint
+drop function if exists kafka.f_ext_sites8add(pn_ext_id bigint, pu_site_id uuid, pn_mo_id bigint, pn_div_id bigint, ps_site_code text, ps_site_name text, pd_date_begin date, pd_date_end date, pu_add_info jsonb);
+create function kafka.f_ext_sites8add(pn_ext_id bigint, pu_site_id uuid, pn_mo_id bigint, pn_div_id bigint, ps_site_code text, ps_site_name text, pd_date_begin date, pd_date_end date, pu_add_info jsonb) returns bigint
     security definer
     language plpgsql
 as $$
@@ -85,11 +81,11 @@ begin
     return n_id;
 end;
 $$;
-alter function f_mis_sites8add(bigint, uuid, bigint, bigint, text, text, date, date, jsonb) owner to dev;
+alter function kafka.f_ext_sites8add(bigint, uuid, bigint, bigint, text, text, date, date, jsonb) owner to dev;
 
 
-drop function if exists f_mis_sites8upd(pn_id bigint, pn_ext_id bigint, pu_site_id uuid, pn_mo_id bigint, pn_div_id bigint, ps_site_code text, ps_site_name text, pd_date_begin date, pd_date_end date, pu_add_info jsonb);
-create function f_mis_sites8upd(pn_id bigint, pn_ext_id bigint, pu_site_id uuid, pn_mo_id bigint, pn_div_id bigint, ps_site_code text, ps_site_name text, pd_date_begin date, pd_date_end date, pu_add_info jsonb) returns void
+drop function if exists kafka.f_ext_sites8upd(pn_id bigint, pn_ext_id bigint, pu_site_id uuid, pn_mo_id bigint, pn_div_id bigint, ps_site_code text, ps_site_name text, pd_date_begin date, pd_date_end date, pu_add_info jsonb);
+create function kafka.f_ext_sites8upd(pn_id bigint, pn_ext_id bigint, pu_site_id uuid, pn_mo_id bigint, pn_div_id bigint, ps_site_code text, ps_site_name text, pd_date_begin date, pd_date_end date, pu_add_info jsonb) returns void
     security definer
     language plpgsql
 as $$
@@ -113,11 +109,11 @@ begin
 --     perform core.f_bp_after(pn_lpu,null,null,'er_sites_upd',pn_id);
 end;
 $$;
-alter function f_mis_sites8upd(bigint, bigint, uuid, bigint, bigint, text, text, date, date, jsonb) owner to dev;
+alter function kafka.f_ext_sites8upd(bigint, bigint, uuid, bigint, bigint, text, text, date, date, jsonb) owner to dev;
 
 
-drop function if exists  f_mis_sites8del(pn_id bigint);
-create function f_mis_sites8del(pn_id bigint) returns void
+drop function if exists kafka.f_ext_sites8del(pn_id bigint);
+create function kafka.f_ext_sites8del(pn_id bigint) returns void
     security definer
     language plpgsql
 as $$
@@ -132,10 +128,11 @@ begin
 --     perform core.f_bp_after(pn_lpu,null,null,'er_sites_del',pn_id);
 end;
 $$;
-alter function f_mis_sites8del(bigint) owner to dev;
+alter function kafka.f_ext_sites8del(bigint) owner to dev;
 
-drop function if exists f_mis_person_sites8add(pn_sites_id bigint, pn_person_id bigint, pb_is_allow boolean, ps_purpose text, ps_type text, pu_add_info jsonb);
-create function f_mis_person_sites8add(pn_sites_id bigint, pn_person_id bigint, pb_is_allow boolean, ps_purpose text, ps_type text, pu_add_info jsonb) returns bigint
+
+drop function if exists kafka.f_ext_person_sites8add(pn_sites_id bigint, pn_person_id bigint, pb_is_allow boolean, ps_purpose text, ps_type text, pu_add_info jsonb);
+create function kafka.f_ext_person_sites8add(pn_sites_id bigint, pn_person_id bigint, pb_is_allow boolean, ps_purpose text, ps_type text, pu_add_info jsonb) returns bigint
     security definer
     language plpgsql
 as $$
@@ -170,11 +167,11 @@ begin
     return n_id;
 end;
 $$;
-alter function f_mis_person_sites8add(bigint,  bigint, boolean, text, text, jsonb) owner to dev;
+alter function kafka.f_ext_person_sites8add(bigint,  bigint, boolean, text, text, jsonb) owner to dev;
 
 
-drop function if exists f_mis_person_sites8upd(pn_id bigint, pn_sites_id bigint, pn_person_id bigint, pb_is_allow boolean, ps_purpose text, ps_type text, pu_add_info jsonb);
-create function f_mis_person_sites8upd(pn_id bigint, pn_sites_id bigint, pn_person_id bigint, pb_is_allow boolean, ps_purpose text, ps_type text, pu_add_info jsonb) returns void
+drop function if exists kafka.f_ext_person_sites8upd(pn_id bigint, pn_sites_id bigint, pn_person_id bigint, pb_is_allow boolean, ps_purpose text, ps_type text, pu_add_info jsonb);
+create function kafka.f_ext_person_sites8upd(pn_id bigint, pn_sites_id bigint, pn_person_id bigint, pb_is_allow boolean, ps_purpose text, ps_type text, pu_add_info jsonb) returns void
     security definer
     language plpgsql
 as $$
@@ -195,10 +192,11 @@ begin
 --     perform core.f_bp_after(pn_lpu,null,null,'er_person_sites_upd',pn_id);
 end;
 $$;
-alter function f_mis_person_sites8upd(bigint, bigint, bigint, boolean, text, text, jsonb) owner to dev;
+alter function kafka.f_ext_person_sites8upd(bigint, bigint, bigint, boolean, text, text, jsonb) owner to dev;
 
-drop function if exists f_mis_person_sites8del(pn_id bigint);
-create function f_mis_person_sites8del(pn_id bigint) returns void
+
+drop function if exists kafka.f_ext_person_sites8del(pn_id bigint);
+create function kafka.f_ext_person_sites8del(pn_id bigint) returns void
     security definer
     language plpgsql
 as $$
@@ -206,18 +204,18 @@ begin
 --     perform core.f_bp_before(pn_lpu,null,null,'er_person_sites_del',pn_id);
     begin
         delete from er.er_person_sites t
-        where t.id   = pn_id;
+        where t.id = pn_id;
         if not found then perform core.f_msg_not_found(pn_id, 'er_person_sites'); end if;
     exception when others then perform core.f_msg_errors(sqlstate,sqlerrm,'D');
     end;
 --     perform core.f_bp_after(pn_lpu,null,null,'er_person_sites_del',pn_id);
 end;
 $$;
-alter function f_mis_person_sites8del(bigint) owner to dev;
+alter function kafka.f_ext_person_sites8del(bigint) owner to dev;
 
 
-drop function if exists public.kafka_load_sites(p_topic text);
-CREATE OR REPLACE FUNCTION public.kafka_load_sites(p_topic text)
+drop function if exists kafka.f_kafka_load_sites(p_topic text);
+CREATE OR REPLACE FUNCTION kafka.f_kafka_load_sites(p_topic text)
     RETURNS int AS
 $$
 DECLARE
@@ -230,7 +228,7 @@ DECLARE
     json_body  jsonb;
     cur_res CURSOR (p_topic TEXT)
         FOR select *
-            from public.kafka_result
+            from kafka.kafka_queue
             where method = p_topic
               and success
               and pg_try_advisory_xact_lock(id)
@@ -249,7 +247,7 @@ BEGIN
 
         select "system", "entity"
         into n_system, n_entity
-        from f_ext_system_entities8find(s_mis_code, p_topic);
+        from kafka.f_ext_system_entities8find(s_mis_code, p_topic);
 
         if not found then
             raise exception 'Нет реализации % для внешней системы %', p_topic, s_mis_code;
@@ -257,10 +255,10 @@ BEGIN
 
         with sites as (
             select t.*,
-                   f_ext_entity_values8find(n_system, n_entity, t."LPU_ID") as mo_ext_id,
-                   f_ext_entity_values8find(n_system, n_entity, t."DIV_ID") as div_ext_id,
-                   f_ext_entity_values8rebuild(n_system, n_entity, t."SITE_ID", coalesce(t.action, 'add')) as ext_id
-            from jsonb_populate_recordset(null::public.ext_system_sites_type,
+                   kafka.f_ext_entity_values8find(n_system, n_entity, t."LPU_ID") as mo_ext_id,
+                   kafka.f_ext_entity_values8find(n_system, n_entity, t."DIV_ID") as div_ext_id,
+                   kafka.f_ext_entity_values8rebuild(n_system, n_entity, t."SITE_ID", coalesce(t.action, 'add')) as ext_id
+            from jsonb_populate_recordset(null::kafka.ext_system_sites_type,
                                           json_body -> 'response' -> 'sites') as t
             where t."SITE_CODE" is not null
          ), ext as (
@@ -279,7 +277,7 @@ BEGIN
                     left join er.er_sites as s on s.ext_id = t.ext_id
          ),
          ins_sites as (
-             select er.f_mis_sites8add(
+             select kafka.f_ext_sites8add(
                    t.ext_id,
                    uuid_generate_v1(),
                    mo,
@@ -297,7 +295,7 @@ BEGIN
                and "action" = 'add'
          ),
          upd_sites as (
-             select er.f_mis_sites8upd(
+             select kafka.f_ext_sites8upd(
                             t.old_id,
                             t.ext_id,
                             t.site_uuid,
@@ -324,7 +322,7 @@ BEGIN
         from cnt;
 
         if n_cnt > 0 then
-            DELETE FROM public.kafka_result WHERE CURRENT OF cur_res;
+            DELETE FROM kafka.kafka_queue WHERE CURRENT OF cur_res;
         end if;
 
     END LOOP;
@@ -337,4 +335,4 @@ END;
 $$
     LANGUAGE plpgsql;
 
---select public.kafka_load_profile('get-profile-info')
+--select kafka.f_kafka_load_profile('get-profile-info')

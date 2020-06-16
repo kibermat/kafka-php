@@ -1,12 +1,12 @@
+
 DO
 $$
     begin
-        set search_path to er, public;
 
-        ALTER TABLE er_directions
+        ALTER TABLE er.er_directions
             ADD COLUMN ext_id bigint default null;
-        comment on column er_directions.ext_id is 'Ссылка на внешний идентификатор';
-        ALTER TABLE er_directions
+        comment on column er.er_directions.ext_id is 'Ссылка на внешний идентификатор';
+        ALTER TABLE er.er_directions
             ADD CONSTRAINT fk_ext_entity_values_id FOREIGN KEY (ext_id) REFERENCES ext_entity_values (id) ON DELETE CASCADE;
 
     exception
@@ -19,8 +19,8 @@ DO
 $$
     begin
         if not exists(select true from pg_type where typname = 'ext_system_directions_type') then
-            --drop type if exists public.ext_system_directions_type;
-            create type public.ext_system_directions_type as
+            --drop type if exists ext_system_directions_type;
+            create type kafka.ext_system_directions_type as
             (
                 id         bigint,
                 type       text,
@@ -50,21 +50,20 @@ create table if not exists er.er_direction_type
     label text   not null
 );
 
+
 insert into er.er_direction_type(id, label)
 select t.*
 from (values (1, 'Поликлиника'), (2, 'Стационар')) as t(id, label)
          left join er.er_direction_type d using (id)
 where d.id is null;
 comment on table er.er_direction_type is 'Тип направления ';
-comment on column er_direction_type.id is 'Id';
-alter table er_directions
-    owner to dev;
+comment on column er.er_direction_type.id is 'Id';
+alter table er.er_directions owner to dev;
 
 DO
 $$
     begin
-        set search_path to er, public;
-        ALTER TABLE er_directions
+        ALTER TABLE er.er_directions
             ADD CONSTRAINT fk_er_direction_type_id FOREIGN KEY (dir_type) REFERENCES er_direction_type (id) ON DELETE RESTRICT;
     exception
         when others then raise notice 'pass %', sqlerrm;
@@ -72,8 +71,8 @@ $$
 $$;
 
 
-drop function if exists er.f_mis_directions8add(pn_ext_id bigint, pu_dir_uid uuid, pn_person_id bigint, ps_dir_numb text, pn_dir_type bigint, ps_dir_kind text, pn_mo_id bigint, pn_div_id bigint, pn_profile_id bigint, pu_add_info jsonb);
-create function er.f_mis_directions8add(pn_ext_id bigint, pu_dir_uid uuid, pn_person_id bigint, ps_dir_numb text,
+drop function if exists kafka.f_ext_directions8add(pn_ext_id bigint, pu_dir_uid uuid, pn_person_id bigint, ps_dir_numb text, pn_dir_type bigint, ps_dir_kind text, pn_mo_id bigint, pn_div_id bigint, pn_profile_id bigint, pu_add_info jsonb);
+create function kafka.f_ext_directions8add(pn_ext_id bigint, pu_dir_uid uuid, pn_person_id bigint, ps_dir_numb text,
                                         pn_dir_type bigint, ps_dir_kind text, pn_mo_id bigint, pn_div_id bigint,
                                         pn_profile_id bigint, pu_add_info jsonb) returns bigint
     security definer
@@ -116,11 +115,11 @@ begin
     return n_id;
 end;
 $$;
-alter function er.f_mis_directions8add(bigint, uuid, bigint, text, bigint, text, bigint, bigint, bigint, jsonb) owner to dev;
+alter function kafka.f_ext_directions8add(bigint, uuid, bigint, text, bigint, text, bigint, bigint, bigint, jsonb) owner to dev;
 
 
-drop function if exists er.f_mis_directions8upd(pn_id bigint, pn_ext_id bigint, pu_dir_uid uuid, pn_person_id bigint, ps_dir_numb text, pn_dir_type bigint, ps_dir_kind text, pn_mo_id bigint, pn_div_id bigint, pn_profile_id bigint, pu_add_info jsonb);
-create function er.f_mis_directions8upd(pn_id bigint, pn_ext_id bigint, pu_dir_uid uuid, pn_person_id bigint,
+drop function if exists kafka.f_ext_directions8upd(pn_id bigint, pn_ext_id bigint, pu_dir_uid uuid, pn_person_id bigint, ps_dir_numb text, pn_dir_type bigint, ps_dir_kind text, pn_mo_id bigint, pn_div_id bigint, pn_profile_id bigint, pu_add_info jsonb);
+create function kafka.f_ext_directions8upd(pn_id bigint, pn_ext_id bigint, pu_dir_uid uuid, pn_person_id bigint,
                                         ps_dir_numb text, pn_dir_type bigint, ps_dir_kind text, pn_mo_id bigint,
                                         pn_div_id bigint, pn_profile_id bigint, pu_add_info jsonb) returns bigint
     security definer
@@ -156,11 +155,11 @@ begin
     return n_id;
 end;
 $$;
-alter function er.f_mis_directions8upd(bigint, bigint, uuid, bigint, text, bigint, text, bigint, bigint, bigint, jsonb) owner to dev;
+alter function kafka.f_ext_directions8upd(bigint, bigint, uuid, bigint, text, bigint, text, bigint, bigint, bigint, jsonb) owner to dev;
 
 
-drop function if exists er.f_mis_directions8del(pn_id bigint);
-create function er.f_mis_directions8del(pn_id bigint) returns void
+drop function if exists kafka.f_ext_directions8del(pn_id bigint);
+create function kafka.f_ext_directions8del(pn_id bigint) returns void
     security definer
     language plpgsql
 as
@@ -178,10 +177,11 @@ begin
     --perform core.f_bp_after(pn_lpu,null,null,'er_directions_del',pn_id);
 end;
 $$;
-alter function er.f_mis_directions8del(pn_id bigint) owner to dev;
+alter function kafka.f_ext_directions8del(pn_id bigint) owner to dev;
 
-drop function if exists public.kafka_load_derections(p_topic text);
-CREATE OR REPLACE FUNCTION public.kafka_load_derections(p_topic text)
+
+drop function if exists kafka.f_kafka_load_derections(p_topic text);
+CREATE OR REPLACE FUNCTION kafka.f_kafka_load_derections(p_topic text)
     RETURNS int AS
 $$
 DECLARE
@@ -196,7 +196,7 @@ DECLARE
     n_ext_person_id bigint;
     cur_res CURSOR (p_topic TEXT)
         FOR select *
-            from public.kafka_result
+            from kafka.kafka_queue
             where method = p_topic
               and success
               and pg_try_advisory_xact_lock(id)
@@ -216,13 +216,13 @@ BEGIN
 
         select "system", "entity"
         into n_system, n_entity
-        from f_ext_system_entities8find(s_mis_code, p_topic);
+        from kafka.f_ext_system_entities8find(s_mis_code, p_topic);
 
         if not found then
             raise exception 'Нет реализации % для внешней системы %', p_topic, s_mis_code;
         end if;
 
-        n_person_id := f_mis_person8find(n_ext_person_id);
+        n_person_id := kafka.f_ext_person8find(n_ext_person_id);
 
         if n_person_id is null then
             raise exception 'Нет агента. Идентификатор внешней системы % ', n_ext_person_id;
@@ -230,11 +230,11 @@ BEGIN
 
         with map as (
             select t.*,
-                   f_ext_entity_values8find(n_system, n_entity, t.lpu)             as mo_ext_id,
-                   f_ext_entity_values8find(n_system, n_entity, t.div)             as div_ext_id,
-                   f_ext_entity_values8find(n_system, n_entity, t.profile_id)      as profile_ext_id,
-                   f_ext_entity_values8rebuild(n_system, n_entity, t.id, "action") as ext_id
-            from jsonb_populate_recordset(null::public.ext_system_directions_type,
+                   kafka.f_ext_entity_values8find(n_system, n_entity, t.lpu)             as mo_ext_id,
+                   kafka.f_ext_entity_values8find(n_system, n_entity, t.div)             as div_ext_id,
+                   kafka.f_ext_entity_values8find(n_system, n_entity, t.profile_id)      as profile_ext_id,
+                   kafka.f_ext_entity_values8rebuild(n_system, n_entity, t.id, "action") as ext_id
+            from jsonb_populate_recordset(null::kafka.ext_system_directions_type,
                                           json_body -> 'response' -> 'ResultSet' -> 'RowSet') as t
         ),
              cte as (
@@ -252,7 +252,7 @@ BEGIN
                    and (t.profile_id is null or pr.id is not null)
              ),
              ins as (
-                 select er.f_mis_directions8add(
+                 select kafka.f_ext_directions8add(
                                 t.ext_id::bigint,
                                 uuid_generate_v1(),
                                 n_person_id::bigint,
@@ -270,7 +270,7 @@ BEGIN
                    and t."action" = 'add'
              ),
              upd as (
-                 select er.f_mis_directions8upd(
+                 select kafka.f_ext_directions8upd(
                                 t.id::bigint,
                                 t.ext_id,
                                 d.dir_uid,
@@ -299,7 +299,7 @@ BEGIN
         from cnt;
 
         if n_cnt > 0 then
-            DELETE FROM public.kafka_result WHERE CURRENT OF cur_res;
+            DELETE FROM kafka.kafka_queue WHERE CURRENT OF cur_res;
         end if;
 
     END LOOP;
@@ -313,16 +313,16 @@ $$
     LANGUAGE plpgsql;
 
 
-select public.kafka_load_derections('get-direction-info');
+--select kafka.f_kafka_load_derections('get-direction-info');
 
 
 with map as (
     select t.*,
-           f_ext_entity_values8find(1, 3, t.lpu)             as mo_ext_id,
-           f_ext_entity_values8find(1, 3, t.div)             as div_ext_id,
-           f_ext_entity_values8find(1, 3, t.profile_id)      as profile_ext_id,
-           f_ext_entity_values8rebuild(1, 3, t.id, "action") as ext_id
-    from jsonb_populate_recordset(null::public.ext_system_directions_type,
+           kafka.f_ext_entity_values8find(1, 3, t.lpu)             as mo_ext_id,
+           kafka.f_ext_entity_values8find(1, 3, t.div)             as div_ext_id,
+           kafka.f_ext_entity_values8find(1, 3, t.profile_id)      as profile_ext_id,
+           kafka.f_ext_entity_values8rebuild(1, 3, t.id, "action") as ext_id
+    from jsonb_populate_recordset(null::kafka.ext_system_directions_type,
                                   '{
                                     "_url": "http://192.168.228.41/med2des/webservice/rpc/er/get_direction_info?agent_id=6739415",
                                     "status": "ok",

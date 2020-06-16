@@ -1,15 +1,11 @@
-set search_path to er, public;
-
 
 DO
 $$
     begin
-        set search_path to er, public;
-
-        ALTER TABLE er_resources
+        ALTER TABLE er.er_resources
             ADD COLUMN ext_id bigint default null;
-        comment on column er_resources.ext_id is 'Ссылка на внешний идентификатор';
-        ALTER TABLE er_resources
+        comment on column er.er_resources.ext_id is 'Ссылка на внешний идентификатор';
+        ALTER TABLE er.er_resources
             ADD CONSTRAINT fk_ext_entity_values_id FOREIGN KEY (ext_id) REFERENCES ext_entity_values (id) ON DELETE CASCADE;
 
     exception
@@ -17,16 +13,13 @@ $$
     END
 $$;
 
-commit;
-set search_path to public;
-
 
 DO
 $$
     begin
         if not exists(select true from pg_type where typname = 'ext_system_resource_row_type') then
-            --drop type if exists public.ext_system_resource_row_type;
-            create type public.ext_system_resource_row_type as
+            drop type if exists ext_system_resource_row_type;
+            create type kafka.ext_system_resource_row_type as
             (
                 "lpu_id"   bigint,
                 "div_id"   bigint,
@@ -41,8 +34,8 @@ DO
 $$
     begin
         if not exists(select true from pg_type where typname = 'ext_system_resources_type') then
-            --drop type if exists public.ext_system_resources_type;
-            create type public.ext_system_resources_type as
+            drop type if exists ext_system_resources_type;
+            create type kafka.ext_system_resources_type as
             (
                 "id"               bigint,
                 "profile_id"       bigint,
@@ -73,8 +66,8 @@ $$
 $$;
 
 
-drop function if exists er.f_mis_resources8add(pn_ext_id bigint, pu_resource_uid uuid, pn_mo_id bigint, pn_div_id bigint, pn_profile_id bigint, ps_name text, ps_address text, ps_notification text, ps_hint text, pb_is_free boolean, pb_is_paid boolean, pn_price numeric, ps_department text, ps_room text, ps_service text, pn_site_id bigint, ps_emp_sname text, ps_emp_fname text, ps_emp_lname text, pn_record_period integer, pn_time_to_elapse integer, pb_allow_wait_list boolean, ps_wait_list_msg text, pu_add_info jsonb);
-create function er.f_mis_resources8add(pn_ext_id bigint, pu_resource_uid uuid, pn_mo_id bigint, pn_div_id bigint,
+drop function if exists kafka.f_ext_resources8add(pn_ext_id bigint, pu_resource_uid uuid, pn_mo_id bigint, pn_div_id bigint, pn_profile_id bigint, ps_name text, ps_address text, ps_notification text, ps_hint text, pb_is_free boolean, pb_is_paid boolean, pn_price numeric, ps_department text, ps_room text, ps_service text, pn_site_id bigint, ps_emp_sname text, ps_emp_fname text, ps_emp_lname text, pn_record_period integer, pn_time_to_elapse integer, pb_allow_wait_list boolean, ps_wait_list_msg text, pu_add_info jsonb);
+create function kafka.f_ext_resources8add(pn_ext_id bigint, pu_resource_uid uuid, pn_mo_id bigint, pn_div_id bigint,
                                        pn_profile_id bigint, ps_name text, ps_address text, ps_notification text,
                                        ps_hint text, pb_is_free boolean, pb_is_paid boolean, pn_price numeric,
                                        ps_department text, ps_room text, ps_service text, pn_site_id bigint,
@@ -149,11 +142,11 @@ begin
     return n_id;
 end;
 $$;
-alter function er.f_mis_resources8add(bigint, uuid, bigint, bigint, bigint, text, text, text, text, boolean, boolean, numeric, text, text, text, bigint, text, text, text, integer, integer, boolean, text, jsonb) owner to dev;
+alter function kafka.f_ext_resources8add(bigint, uuid, bigint, bigint, bigint, text, text, text, text, boolean, boolean, numeric, text, text, text, bigint, text, text, text, integer, integer, boolean, text, jsonb) owner to dev;
 
 
-drop function if exists er.f_mis_resources8upd(pn_id bigint, pn_ext_id bigint, pu_resource_uid uuid, pn_mo_id bigint, pn_div_id bigint, pn_profile_id bigint, ps_name text, ps_address text, ps_notification text, ps_hint text, pb_is_free boolean, pb_is_paid boolean, pn_price numeric, ps_department text, ps_room text, ps_service text, pn_site_id bigint, ps_emp_sname text, ps_emp_fname text, ps_emp_lname text, pn_record_period integer, pn_time_to_elapse integer, pb_allow_wait_list boolean, ps_wait_list_msg text, pu_add_info jsonb);
-create function er.f_mis_resources8upd(pn_id bigint, pn_ext_id bigint, pu_resource_uid uuid, pn_mo_id bigint,
+drop function if exists kafka.f_ext_resources8upd(pn_id bigint, pn_ext_id bigint, pu_resource_uid uuid, pn_mo_id bigint, pn_div_id bigint, pn_profile_id bigint, ps_name text, ps_address text, ps_notification text, ps_hint text, pb_is_free boolean, pb_is_paid boolean, pn_price numeric, ps_department text, ps_room text, ps_service text, pn_site_id bigint, ps_emp_sname text, ps_emp_fname text, ps_emp_lname text, pn_record_period integer, pn_time_to_elapse integer, pb_allow_wait_list boolean, ps_wait_list_msg text, pu_add_info jsonb);
+create function kafka.f_ext_resources8upd(pn_id bigint, pn_ext_id bigint, pu_resource_uid uuid, pn_mo_id bigint,
                                        pn_div_id bigint, pn_profile_id bigint, ps_name text, ps_address text,
                                        ps_notification text, ps_hint text, pb_is_free boolean, pb_is_paid boolean,
                                        pn_price numeric, ps_department text, ps_room text, ps_service text,
@@ -210,11 +203,11 @@ begin
     return n_id;
 end;
 $$;
-alter function er.f_mis_resources8upd(bigint, bigint, uuid, bigint, bigint, bigint, text, text, text, text, boolean, boolean, numeric, text, text, text, bigint, text, text, text, integer, integer, boolean, text, jsonb) owner to dev;
+alter function kafka.f_ext_resources8upd(bigint, bigint, uuid, bigint, bigint, bigint, text, text, text, text, boolean, boolean, numeric, text, text, text, bigint, text, text, text, integer, integer, boolean, text, jsonb) owner to dev;
 
 
-drop function if exists er.f_mis_resources8del(pn_id bigint);
-create function er.f_mis_resources8del(pn_id bigint) returns void
+drop function if exists kafka.f_ext_resources8del(pn_id bigint);
+create function kafka.f_ext_resources8del(pn_id bigint) returns void
     security definer
     language plpgsql
 as
@@ -232,10 +225,10 @@ begin
     --perform core.f_bp_after(pn_lpu,null,null,'er_resources_del',pn_id);
 end;
 $$;
-alter function er.f_mis_resources8del(bigint) owner to dev;
+alter function kafka.f_ext_resources8del(bigint) owner to dev;
 
 
-create or replace function public.kafka_load_resources(p_topic text)
+create or replace function kafka.f_kafka_load_resources(p_topic text)
     RETURNS integer as
 $$
 DECLARE
@@ -248,7 +241,7 @@ DECLARE
     json_body  jsonb;
     cur_res CURSOR (p_topic TEXT)
         FOR select *
-            from public.kafka_result
+            from kafka.kafka_queue
             where method = p_topic
               and success
               and pg_try_advisory_xact_lock(id)
@@ -268,7 +261,7 @@ begin
 
         select "system", "entity"
         into n_system, n_entity
-        from f_ext_system_entities8find(s_mis_code, p_topic);
+        from kafka.f_ext_system_entities8find(s_mis_code, p_topic);
 
         if not found then
             raise exception 'Нет реализации % для внешней системы %', p_topic, s_mis_code;
@@ -282,20 +275,20 @@ begin
 
         with resources as (
             select t.*,
-                   f_ext_entity_values8find(n_system, n_entity, t.lpu_id) as mo_ext_id,
-                   f_ext_entity_values8find(n_system, n_entity, t.div_id) as div_ext_id
-            from jsonb_populate_recordset(null::public.ext_system_resource_row_type,
+                   kafka.f_ext_entity_values8find(n_system, n_entity, t.lpu_id) as mo_ext_id,
+                   kafka.f_ext_entity_values8find(n_system, n_entity, t.div_id) as div_ext_id
+            from jsonb_populate_recordset(null::kafka.ext_system_resource_row_type,
                                           json_body -> 'response' -> 'ResultSet' -> 'Rowset') as t
         ),
              ext as (
-                 select f_ext_entity_values8find(n_system, n_entity, t.profile_id)      as profile_ext_id,
-                        f_ext_entity_values8rebuild(n_system, n_entity, t.id, "action") as ext_id,
+                 select kafka.f_ext_entity_values8find(n_system, n_entity, t.profile_id)      as profile_ext_id,
+                        kafka.f_ext_entity_values8rebuild(n_system, n_entity, t.id, "action") as ext_id,
                         case when t."action" is null then 'add' else t."action" end     as "action_res",
                         mo.id                                                           as lpu_id,
                         div.id                                                          as div_id,
                         t.*
                  from resources
-                          join jsonb_populate_recordset(null::public.ext_system_resources_type, resource) as t on true
+                          join jsonb_populate_recordset(null::kafka.ext_system_resources_type, resource) as t on true
                           left join er.er_mo mo ON (resources.mo_ext_id = mo.ext_id)
                           left join er.er_mo div ON (resources.div_ext_id = div.ext_id)
                  where (resources.lpu_id is null or mo.id is not null)
@@ -310,7 +303,7 @@ begin
                    and (ext.site_id is null or st.id is not null)
              ),
              ins as (
-                 select er.f_mis_resources8add(
+                 select kafka.f_ext_resources8add(
                                 t.ext_id,
                                 uuid_generate_v1(),
                                 t."lpu_id"::bigint,
@@ -342,7 +335,7 @@ begin
                    and "action_res" = 'add'
              ),
              upd as (
-                 select er.f_mis_resources8upd(
+                 select kafka.f_ext_resources8upd(
                                 t."id"::bigint,
                                 res.resource_uid,
                                 t."lpu_id"::bigint,
@@ -385,7 +378,7 @@ begin
         from cnt;
 
         if n_cnt > 0 then
-            delete from public.kafka_result where current of cur_res;
+            delete from kafka.kafka_queue where current of cur_res;
         end if;
 
     end loop;
