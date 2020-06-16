@@ -290,18 +290,17 @@ begin
                         t.*
                  from resources
                           join jsonb_populate_recordset(null::kafka.ext_system_resources_type, resource) as t on true
-                          left join er.er_mo mo ON (resources.mo_ext_id = mo.ext_id)
-                          left join er.er_mo div ON (resources.div_ext_id = div.ext_id)
-                 where (resources.lpu_id is null or mo.id is not null)
-                   and (resources.div_id is null or div.id is not null)
+                          join er.er_mo mo ON (resources.mo_ext_id = mo.ext_id)
+                          join er.er_mo div ON (resources.div_ext_id = div.ext_id)
              ),
              cte as (
-                 select ext.*
+                 select ext.*,
+                        pr.id as pr_id,
+                        st.id as st_id
                  from ext
-                          left join er.er_profiles pr ON (ext.profile_ext_id = pr.ext_id)
+                          join er.er_profiles pr ON (ext.profile_ext_id = pr.ext_id)
                           left join er.er_sites st ON (ext.site_id = st.id)
-                 where (ext.profile_id is null or pr.id is not null)
-                   and (ext.site_id is null or st.id is not null)
+                 where (ext.site_id is null or st.id is not null)
              ),
              ins as (
                  select kafka.f_ext_resources8add(
@@ -309,7 +308,7 @@ begin
                                 uuid_generate_v1(),
                                 t."lpu_id"::bigint,
                                 t."div_id"::bigint,
-                                t."profile_id"::bigint,
+                                t.pr_id::bigint,
                                 t."name"::text,
                                 t."address"::text,
                                 t."notification"::text,
@@ -320,7 +319,7 @@ begin
                                 t."department"::text,
                                 t."room"::text,
                                 t."service"::text,
-                                t."site_id"::bigint,
+                                t.st_id::bigint,
                                 t."doctor_surname"::text,
                                 t."doctor_firstname"::text,
                                 t."doctor_lastname"::text,
@@ -338,10 +337,11 @@ begin
              upd as (
                  select kafka.f_ext_resources8upd(
                                 t."id"::bigint,
+                                t.ext_id,
                                 res.resource_uid,
                                 t."lpu_id"::bigint,
                                 t."div_id"::bigint,
-                                t."profile_id"::bigint,
+                                t.pr_id::bigint,
                                 t."name"::text,
                                 t."address"::text,
                                 t."notification"::text,
@@ -352,7 +352,7 @@ begin
                                 t."department"::text,
                                 t."room"::text,
                                 t."service"::text,
-                                t."site_id"::bigint,
+                                t.st_id::bigint,
                                 t."doctor_surname"::text,
                                 t."doctor_firstname"::text,
                                 t."doctor_lastname"::text,

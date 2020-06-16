@@ -18,7 +18,7 @@ $consumer =new Consumer(Settings::BROKER,
     [$topic1, $topic2, $topic3, $topic4, $topic5, $topic_me],
     'er');
 
-$db = new Logger('pgsql:host=localhost;port=5432;dbname=er', 'postgres', 'postgres');
+$db = new Logger('pgsql:host=localhost;port=5432;dbname=db_test_kafka', 'postgres', 'postgres');
 
 $consumer->start(
     function($topic, $part, $message) use ($db) {

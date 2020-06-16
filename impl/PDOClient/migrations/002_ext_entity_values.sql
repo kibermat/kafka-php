@@ -285,16 +285,25 @@ declare
     n_id bigint default null;
 begin
     if pn_value is null then
-        return n_id;
+        return null;
     end if;
 
     select t.id
     into n_id
     from kafka.ext_entity_values t
     where t."system" = pn_system
---    and t."entity" = pn_entity
+      and t."entity" = pn_entity
       and t."value" = pn_value
     limit 1;
+
+    if not found then
+        select t.id
+        into n_id
+        from kafka.ext_entity_values t
+        where t."system" = pn_system
+          and t."value" = pn_value
+        limit 1;
+    end if;
 
     return n_id;
 end;
@@ -313,12 +322,10 @@ begin
 
     n_id := kafka.f_ext_entity_values8find(pn_system, pn_entity, pn_value);
 
-    if n_id is not null then
+    if ps_action = 'del' and n_id is not null then
         perform kafka.f_ext_entity_values8del(n_id);
         n_id := null;
-    end if;
-
-    if ps_action is null or ps_action in ('add', 'upd') then
+    elseif n_id is null and (ps_action is null or ps_action in ('add', 'upd')) then
         n_id := kafka.f_ext_entity_values8add(pn_system, pn_entity, pn_value);
     end if;
 

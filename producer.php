@@ -6,7 +6,7 @@ use KafkaClient\Producer\Producer;
 use KafkaClient\Settings;
 
 
-$temp_dir = __DIR__ . '/temp';
+$temp_dir = __DIR__ . '/temp/full';
 
 $lpu_str = file_get_contents($temp_dir . '/lpu.json');
 $lpu_json = json_decode($lpu_str, true);
@@ -38,19 +38,19 @@ if ($async) {
     $producer_single->send(true);
 } else {
 
-//    $producer1 =new Producer(Settings::BROKER, $topic1, '', '', $async);
-//    $producer1->send($lpu_json);
+    $producer1 =new Producer(Settings::BROKER, $topic1, '', '', $async);
+    $producer1->send($lpu_json);
 
-//    $producer2 =new Producer(Settings::BROKER, $topic2, '', '', $async);
-//    $producer2->send($profile_json);
-//
+    $producer2 =new Producer(Settings::BROKER, $topic2, '', '', $async);
+    $producer2->send($profile_json);
+
     $producer3 =new Producer(Settings::BROKER, $topic3, '', '', $async);
     $producer3->send($directions_info_json);
 
-//    $producer4 =new Producer(Settings::BROKER, $topic4, '', '', $async);
-//    $producer4->send($resource_json);
-//
-//    $producer5 =new Producer(Settings::BROKER, $topic5, '', '', $async);
-//    $producer5->send($resource_person_json);
+    $producer4 =new Producer(Settings::BROKER, $topic4, '', '', $async);
+    $producer4->send($resource_json);
+
+    $producer5 =new Producer(Settings::BROKER, $topic5, '', '', $async);
+    $producer5->send($resource_person_json);
 
 }

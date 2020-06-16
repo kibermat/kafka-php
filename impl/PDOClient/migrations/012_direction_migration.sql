@@ -182,9 +182,9 @@ alter function kafka.f_ext_directions8del(pn_id bigint) owner to dev;
 
 
 drop function if exists kafka.f_kafka_load_derections(p_topic text);
-CREATE OR REPLACE FUNCTION kafka.f_kafka_load_derections(p_topic text)
-    RETURNS int AS
-$$
+create function kafka.f_kafka_load_derections(p_topic text) returns integer
+    language plpgsql
+as $$
 DECLARE
     n_cnt           INT DEFAULT 0;
     s_mis_code      VARCHAR;
@@ -240,7 +240,10 @@ BEGIN
         ),
              cte as (
                  select t.*,
-                        dir_type.id as dir_type
+                        dir_type.id as dir_type,
+                        mo.id as mo_id,
+                        div.id as div_id,
+                        pr.id as pr_id
                  from map as t
                           left join lateral (select id
                                              from er.er_direction_type
@@ -248,7 +251,7 @@ BEGIN
                           left join er.er_mo mo on (t.mo_ext_id = mo.ext_id)
                           left join er.er_mo div on (t.div_ext_id = div.ext_id)
                           left join er.er_profiles pr on (t.profile_ext_id = pr.ext_id)
-                 where (t.lpu is null or mo.id is not null)
+                 where (mo.id is not null)
                    and (t.div is null or div.id is not null)
                    and (t.profile_id is null or pr.id is not null)
              ),
@@ -260,9 +263,9 @@ BEGIN
                                 t.dir_numb::text,
                                 t.dir_type::bigint,
                                 t.kind::text,
-                                t.lpu::bigint,
-                                t.div::bigint,
-                                t.profile_id::bigint,
+                                t.mo_id::bigint,
+                                t.div_id::bigint,
+                                t.pr_id::bigint,
                                 t."FullInfo"::jsonb
                             )
                  from cte as t
@@ -279,9 +282,9 @@ BEGIN
                                 t.dir_numb::text,
                                 t.dir_type::bigint,
                                 t.kind::text,
-                                t.lpu::bigint,
-                                t.div::bigint,
-                                t.profile_id::bigint,
+                                t.mo_id::bigint,
+                                t.div_id::bigint,
+                                t.pr_id::bigint,
                                 t."FullInfo"::jsonb
                             )
                  from cte as t
@@ -310,8 +313,8 @@ BEGIN
     return n_cnt;
 
 END;
-$$
-    LANGUAGE plpgsql;
+$$;
+alter function kafka.f_kafka_load_derections(text) owner to dev;
 
 
 --select kafka.f_kafka_load_derections('get-direction-info');
