@@ -6,8 +6,9 @@ $$
         ALTER TABLE er.er_sites
             ADD COLUMN ext_id bigint default null;
         comment on column er.er_sites.ext_id is 'Ссылка на внешний идентификатор';
+
         ALTER TABLE er.er_sites
-            ADD CONSTRAINT fk_ext_entity_values_id FOREIGN KEY (ext_id) REFERENCES ext_entity_values (id) ON DELETE SET NULL;
+            ADD CONSTRAINT fk_ext_entity_values_id FOREIGN KEY (ext_id) REFERENCES kafka.ext_entity_values (id) ON DELETE SET NULL;
 
     exception
         when others then raise notice 'pass %', sqlerrm;

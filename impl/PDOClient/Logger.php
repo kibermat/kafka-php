@@ -23,7 +23,7 @@ class Logger
 
     protected function createResult() {
         self::$dbh->exec('
-               create table if not exists kafka_result (
+               create table if not exists kafka.kafka_queue (
                     id serial primary key, 
                     method varchar(255) not null,
                     "data" jsonb, 
@@ -42,7 +42,7 @@ class Logger
             return;
         }
 
-        $sql = 'insert into kafka_result (method, "data", success, ssid, message, version)
+        $sql = 'insert into  kafka.kafka_queue (method, "data", success, ssid, message, version)
                     values (:method, :data, :success, :ssid, :message, :version)';
 
         $sth = self::$dbh->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_FWDONLY));

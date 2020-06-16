@@ -30,6 +30,7 @@ $topic2 = 'get-profile-info';
 $topic3 = 'get-direction-info';
 $topic4 = 'get-resource';
 $topic5 = 'get-resource-person';
+$topic6 = 'get-about-me';
 
 
 if ($async) {
@@ -39,17 +40,17 @@ if ($async) {
 
 //    $producer1 =new Producer(Settings::BROKER, $topic1, '', '', $async);
 //    $producer1->send($lpu_json);
-//
+
 //    $producer2 =new Producer(Settings::BROKER, $topic2, '', '', $async);
 //    $producer2->send($profile_json);
 //
-//    $producer3 =new Producer(Settings::BROKER, $topic3, '', '', $async);
-//    $producer3->send($directions_info_json);
-//
+    $producer3 =new Producer(Settings::BROKER, $topic3, '', '', $async);
+    $producer3->send($directions_info_json);
+
 //    $producer4 =new Producer(Settings::BROKER, $topic4, '', '', $async);
 //    $producer4->send($resource_json);
 //
-    $producer5 =new Producer(Settings::BROKER, $topic5, '', '', $async);
-    $producer5->send($resource_person_json);
+//    $producer5 =new Producer(Settings::BROKER, $topic5, '', '', $async);
+//    $producer5->send($resource_person_json);
 
 }

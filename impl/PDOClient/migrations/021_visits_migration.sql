@@ -5,8 +5,9 @@ $$
         ALTER TABLE er.er_person_visit
             ADD COLUMN ext_id bigint default null;
         comment on column er.er_person_visit.ext_id is 'Ссылка на внешний идентификатор';
+
         ALTER TABLE er.er_person_visit
-            ADD CONSTRAINT fk_ext_entity_values_id FOREIGN KEY (ext_id) REFERENCES ext_entity_values (id) ON DELETE CASCADE;
+            ADD CONSTRAINT fk_ext_entity_values_id FOREIGN KEY (ext_id) REFERENCES kafka.ext_entity_values (id) ON DELETE CASCADE;
 
     exception
         when others then raise notice 'pass %', sqlerrm;
