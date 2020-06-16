@@ -19,13 +19,13 @@ DO
 $$
     begin
         if not exists(select true from pg_type where typname = 'ext_system_visit_type') then
-            --drop type if exists ext_system_visit_type;
+            --drop type if exists kafka.ext_system_visit_type;
             create type kafka.ext_system_visit_type as
             (
                 "vis_uid"       bigint,
-                "mo_id"         bigint,
-                "div_id"        bigint,
-                "resource_id"   bigint,
+                "mo_uid"         bigint,
+                "div_uid"        bigint,
+                "resource_uid"   bigint,
                 "mo"            text,
                 "mo_name"       text,
                 "service"       text,

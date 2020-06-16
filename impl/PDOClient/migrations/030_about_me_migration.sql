@@ -259,14 +259,14 @@ BEGIN
 
         with visit as (
             select t.*,
-                   kafka.f_ext_entity_values8find(n_system, n_entity, t.mo_id) as mo_ext_id,
-                   kafka.f_ext_entity_values8find(n_system, n_entity, t.div_id) as div_ext_id,
+                   kafka.f_ext_entity_values8find(n_system, n_entity, t.mo_uid) as mo_ext_id,
+                   kafka.f_ext_entity_values8find(n_system, n_entity, t.div_uid) as div_ext_id,
                    kafka.f_ext_entity_values8find(n_system, n_entity, t.direction_uid) as direction_ext_id,
-                   kafka.f_ext_entity_values8find(n_system, n_entity, t.resource_id) as resource_ext_id,
+                   kafka.f_ext_entity_values8find(n_system, n_entity, t.resource_uid) as resource_ext_id,
                    kafka.f_ext_entity_values8rebuild(n_system, n_entity, t.vis_uid, coalesce("action", 'add')) as ext_id
             from jsonb_populate_recordset(null::kafka.ext_system_visit_type,
                                           json_body -> 'response' -> 'visits') as t
-            where t.name is not null
+            where t.vis_date is not null
         ),
              cte as (
                  select
@@ -276,14 +276,13 @@ BEGIN
                      mo.id as mo_id,
                      div.id as div_id,
                      dir.id as dir_id,
-                     res.id as res_id
+                     null::bigint as res_id
                  from visit as ext
                           join er.er_mo as mo on mo.ext_id = ext.mo_ext_id
                           join er.er_mo as div on div.ext_id = ext.div_ext_id
                           left join er.er_person_visit as v on v.ext_id = ext.ext_id
                           left join er.er_visit_status as status on status.scode = ext.status
                           left join er.er_directions as dir on dir.ext_id = ext.direction_ext_id
-                          left join er.er_resources as res on res.ext_id = ext.resource_ext_id
              ),
              ins as (
                  select kafka.f_ext_person_visit8add(
@@ -297,19 +296,18 @@ BEGIN
                                 t."service",
                                 t.emp_fio,
                                 t.vis_date,
-                                null::date,
+                                t.vis_date,
                                 t.cost,
                                 t.recommend,
                                 t.status_id,
                                 t.status_desc,
-                                t.source,
+                                coalesce(t.source, 'ext'),
                                 t.source_desc,
-                                null::bool,
+                                true::bool,
                                 t."FullInfo"::jsonb
                             )
                  from cte as t
                  where t.old_id is null
-                   and "action" = 'add'
              ),
              upd as (
                  select kafka.f_ext_person_visit8upd(
@@ -324,14 +322,14 @@ BEGIN
                                 t."service",
                                 t.emp_fio,
                                 t.vis_date,
-                                null::date,
+                                t.vis_date,
                                 t.cost,
                                 t.recommend,
                                 t.status_id,
                                 t.status_desc,
-                                t.source,
+                                coalesce(t.source, 'ext'),
                                 t.source_desc,
-                                null::bool,
+                                true::bool,
                                 t."FullInfo"::jsonb
                             )
                  from cte as t
@@ -350,7 +348,7 @@ BEGIN
 
         with recipes as (
             select t.*,
-                   kafka.f_ext_entity_values8find(n_system, n_entity, t.mo_id)             as mo_ext_id,
+                   kafka.f_ext_entity_values8find(n_system, n_entity, t.mo_uid)             as mo_ext_id,
                    kafka.f_ext_entity_values8rebuild(n_system, n_entity, t."recipe_uid", coalesce(t.action, 'add')) as ext_id
             from jsonb_populate_recordset(null::kafka.ext_system_recipe_type,
                                           json_body -> 'response' -> 'recipes') as t
@@ -371,7 +369,7 @@ BEGIN
                                 mo.id,
                                 false,
                                 null::bigint,
-                                t.visit_id,
+                                null::bigint,
                                 t.code::text,
                                 null::text,
                                 t.datecreate,
@@ -383,7 +381,6 @@ BEGIN
                  from cte as t
                           left join er.er_mo mo ON (t.mo_ext_id = mo.ext_id)
                  where t.old_id is null
-                   and "action" = 'add'
              ),
              upd_recipes(none, id, recipe_uid) as (
                  select kafka.f_ext_person_recipe8upd(
@@ -394,7 +391,7 @@ BEGIN
                                 mo.id,
                                 false,
                                 null::bigint,
-                                t.visit_id,
+                                null::bigint,
                                 t.code::text,
                                 null::text,
                                 t.datecreate,
@@ -424,10 +421,10 @@ BEGIN
                                 t.ext_id,
                                 uuid_generate_v1(),
                                 t.drug,
-                                null::text,
-                                null::numeric,
-                                null::text,
-                                null::text,
+                                t.drug,
+                                t.pack_count::numeric,
+                                'МГ'::text,
+                                t.pack_count::text,
                                 true,
                                 null::jsonb
                             ) as drug_id, t.id as recipe_id, t.description as use_method, t.pack_count
@@ -441,10 +438,10 @@ BEGIN
                                 t.ext_id,
                                 uuid_generate_v1(),
                                 t.drug,
-                                null::text,
-                                null::numeric,
-                                null::text,
-                                null::text,
+                                t.drug,
+                                t.pack_count::numeric,
+                                'МГ'::text,
+                                t.pack_count::text,
                                 true,
                                 null::jsonb
                             ) as none, d.id as drug_id, t.id as recipe_id, t.drug_uid, t.recipe_uid
@@ -481,7 +478,7 @@ BEGIN
                             )
                  from recipe_drug as t
                           left join er.er_recipe_drug as rd using (drug_id, recipe_id)
-                 where rd.id is null
+                 where rd.id is not null
              ),
              cnt as (
                  select count(1) as n
@@ -519,7 +516,8 @@ BEGIN
                                 t.id,
                                 uuid_generate_v1(),
                                 t.anthrop,
-                                t.a_value
+                                t.a_value,
+                                t.meas_name
                             )
                  from sp as t
              )
@@ -530,20 +528,21 @@ BEGIN
         with bulletins as (
             select t.*,
                    kafka.f_ext_entity_values8find(n_system, n_entity, t.mo_uid)    as mo_ext_id,
-                   kafka.f_ext_entity_values8find(n_system, n_entity, t.visit_uid) as visit_ext_id
+                   kafka.f_ext_entity_values8find(n_system, n_entity, t.visit_uid) as visit_ext_id,
+                   kafka.f_ext_entity_values8rebuild(n_system, n_entity, t."bull_uid", 'add') as ext_id
             from jsonb_populate_recordset(null::kafka.ext_system_bulletin_type,
                                           json_body -> 'response' -> 'bulletins') as t
             where t."types" is not null
         ),
              ins(id) as (
                  select kafka.f_ext_person_bulletin8add(
-                                t.bull_uid,
+                                t.ext_id,
                                 uuid_generate_v1(),
                                 n_person_id,
                                 mo.id,
                                 t.code,
                                 t.types,
-                                null::integer,
+                                0::integer,
                                 t.datecreate,
                                 null::text,
                                 t.datecreate,
@@ -556,18 +555,20 @@ BEGIN
                           left join er.er_person_visit as visit on visit.ext_id = t.visit_ext_id
              )
         select count(1)
+        into n_cnt
         from ins;
 
         with vaccinations as (
             select t.*,
-                   kafka.f_ext_entity_values8find(n_system, n_entity, t.mo_uid)    as mo_ext_id
+                   kafka.f_ext_entity_values8find(n_system, n_entity, t.mo_uid)    as mo_ext_id,
+                   kafka.f_ext_entity_values8rebuild(n_system, n_entity, t."vac_uid", 'add') as ext_id
             from jsonb_populate_recordset(null::kafka.ext_system_vaccination_type,
                                           json_body -> 'response' -> 'vaccinations') as t
             where t."type" is not null
         ),
              ins(id) as (
                  select kafka.f_ext_person_vaccination8add(
-                                t.vac_uid,
+                                t.ext_id,
                                 uuid_generate_v1(),
                                 n_person_id,
                                 mo.id,
@@ -581,6 +582,7 @@ BEGIN
                           join er.er_mo as mo on mo.ext_id = t.mo_ext_id
              )
         select count(1)
+        into n_cnt
         from ins;
 
         DELETE FROM kafka.kafka_queue WHERE CURRENT OF cur_res;

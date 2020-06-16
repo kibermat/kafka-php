@@ -36,12 +36,12 @@ DO
 $$
     begin
         if not exists(select true from pg_type where typname = 'ext_system_recipe_type') then
-            drop type if exists ext_system_recipe_type;
+            drop type if exists kafka.ext_system_recipe_type;
             create type kafka.ext_system_recipe_type as
             (
                 "recipe_uid" bigint,
-                "mo_id"      bigint,
-                "visit_id"   bigint,
+                "mo_uid"      bigint,
+                "visit_uid"   bigint,
                 "type"       text,
                 "datecreate" date,
                 "code"       text,

@@ -16,7 +16,6 @@ select kafka.f_kafka_load_person('get-about-me');
 
 
 
-
 with params(
             n_system,
             n_entity,
@@ -25,7 +24,7 @@ with params(
     ) as (
     select 1,
            9,
-           10722,
+           6202,
            '{
              "status": "ok",
              "unitcode": "er",
@@ -388,8 +387,7 @@ with params(
            }
            '::jsonb
 )
-
-     --,   sites as (
+,   sites as (
 select t.*,
        kafka.f_ext_entity_values8find(n_system, n_entity, t."LPU_ID")                                as mo_ext_id,
        kafka.f_ext_entity_values8find(n_system, n_entity, t."DIV_ID")                                as div_ext_id,
