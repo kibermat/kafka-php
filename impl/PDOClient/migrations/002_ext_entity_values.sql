@@ -335,29 +335,12 @@ $$;
 alter function kafka.f_ext_entity_values8rebuild(pn_system integer, pn_entity integer, pn_value bigint, ps_action varchar) owner to dev;
 
 
-create or replace function kafka.f_ext_agent8find(pu_uid uuid, out "agent" varchar)
-as
-'
-    select ag.mis_agent as agent
-    from er.er_persons as per
-             join er.er_users as er_u on er_u.id = per.er_users
-             join er.er_mis_agents as ag on ag.sysuser = er_u.sysuser
-    where per.pers_uid = pu_uid
-    limit 1
-'
-    LANGUAGE SQL;
-alter function kafka.f_ext_agent8find(pu_uid uuid, out "agent" varchar) owner to dev;
---select kafka.f_ext_agent8find('0cb40d52-abac-4fef-9f9e-6d64ec53de27');
-
-
 create or replace function kafka.f_ext_person8find(agent bigint, out person_id bigint)
 as
-'
+'    --TODO debug
     select per.id as person_id
-    from er.er_mis_agents as ag
-             join er.er_users as er_u on er_u.id = ag.er_user
-             join er.er_persons as per on per.er_users = er_u.id
-    where ag.mis_agent = agent::varchar
+    from  er.er_persons as per
+    order by 1
     limit 1
 '
     LANGUAGE SQL;

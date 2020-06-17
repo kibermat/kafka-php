@@ -16,11 +16,9 @@ COMMENT ON COLUMN user_person."system" IS 'Связь с внешней сист
 DO
 $$
     begin
-        set search_path to public;
-
         ALTER TABLE user_person ADD CONSTRAINT fk_user_persons_users FOREIGN KEY ( "user" ) REFERENCES users( id );
         ALTER TABLE user_person ADD CONSTRAINT fk_user_persons_er_persons_id FOREIGN KEY ( person ) REFERENCES er.er_persons( id );
-        ALTER TABLE user_person ADD CONSTRAINT fk_user_person_system FOREIGN KEY ( "system" ) REFERENCES ext_systems( id );
+        ALTER TABLE user_person ADD CONSTRAINT fk_user_person_system FOREIGN KEY ( "system" ) REFERENCES kafka.ext_systems( id );
     exception
         when others then raise notice 'pass %', sqlerrm;
     END
