@@ -88,10 +88,12 @@ from (values ('get-agent', 'Информация о пользователе', n
              ('get-resource-person', 'Доступные врачи/услуги пользователю', null),
              ('get-schedule', 'Расписания ', '/med2des/webservice/rpc/er/get_schedule'),
              ('put-appointment', 'Запись на прием', '/med2des/webservice/rpc/er/put_ticket_add'),
+             ('registration', 'Регистрация агента', '/med2des/webservice/rpc/er/registration'),
              ('get-about-me', 'Первичная загрузка по пациенту', null),
              ('get-sites', 'Участки', null)
      ) as t (code, description, endpoint)
 ;
+
 
 CREATE TABLE IF NOT EXISTS kafka.ext_system_entities
 (
@@ -333,6 +335,16 @@ begin
 end;
 $$;
 alter function kafka.f_ext_entity_values8rebuild(pn_system integer, pn_entity integer, pn_value bigint, ps_action varchar) owner to dev;
+
+
+CREATE OR REPLACE VIEW kafka.v_ext_entities_url AS
+select s.code as ext_system,
+       e."code" as ext_entity,
+       kafka.f_ext_system_entities8get_url(se."system", se."entity") as ext_url
+from kafka.ext_system_entities as se
+         join kafka.ext_entities e on se."entity" = e.id
+         join kafka.ext_systems s on se."system" = s.id
+where e."endpoint" is not null;
 
 
 create or replace function kafka.f_ext_person8find(agent bigint, out person_id bigint)
